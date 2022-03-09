@@ -1,4 +1,5 @@
 import type { State } from "./State";
+import type { ClockService } from "./ClockService";
 
 /**
  * Fake state store implementation necessary for validating refresh token requests.
@@ -14,6 +15,8 @@ export class RefreshState implements State {
     public readonly refresh_token: string;
     public readonly id_token: string;
     public readonly scope: string;
+
+    public readonly _clockService: ClockService = undefined as never;
 
     constructor(args: {
         refresh_token: string;

@@ -11,6 +11,7 @@ export type AccessTokenCallback = (...ev: unknown[]) => (Promise<void> | void);
 export class AccessTokenEvents {
     constructor(args: {
         expiringNotificationTimeInSeconds: number;
+        clockService: ClockService;
     });
     addAccessTokenExpired(cb: AccessTokenCallback): () => void;
     addAccessTokenExpiring(cb: AccessTokenCallback): () => void;
@@ -33,6 +34,12 @@ export class CheckSessionIFrame {
     start(session_state: string): void;
     // (undocumented)
     stop(): void;
+}
+
+// @public
+export class ClockService {
+    // (undocumented)
+    getEpochTime(): number;
 }
 
 // @public (undocumented)
@@ -321,6 +328,7 @@ export interface OidcClientSettings {
     client_id: string;
     // (undocumented)
     client_secret?: string;
+    clockService?: ClockService;
     clockSkewInSeconds?: number;
     display?: string;
     extraQueryParams?: Record<string, string | number | boolean>;
@@ -351,7 +359,7 @@ export interface OidcClientSettings {
 
 // @public
 export class OidcClientSettingsStore {
-    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, clockSkewInSeconds, userInfoJwtIssuer, mergeClaims, stateStore, extraQueryParams, extraTokenParams, }: OidcClientSettings);
+    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, clockSkewInSeconds, clockService, userInfoJwtIssuer, mergeClaims, stateStore, extraQueryParams, extraTokenParams, }: OidcClientSettings);
     // (undocumented)
     readonly acr_values: string | undefined;
     // (undocumented)
@@ -362,6 +370,8 @@ export class OidcClientSettingsStore {
     readonly client_id: string;
     // (undocumented)
     readonly client_secret: string | undefined;
+    // (undocumented)
+    readonly clockService: ClockService;
     // (undocumented)
     readonly clockSkewInSeconds: number;
     // (undocumented)
@@ -581,7 +591,7 @@ export type SigninRedirectArgs = RedirectParams & ExtraSigninRequestArgs;
 
 // @public (undocumented)
 export class SigninRequest {
-    constructor({ url, authority, client_id, redirect_uri, response_type, scope, state_data, response_mode, request_type, client_secret, skipUserInfo, extraQueryParams, extraTokenParams, ...optionalParams }: SigninRequestArgs);
+    constructor({ url, authority, client_id, redirect_uri, response_type, scope, state_data, response_mode, request_type, client_secret, skipUserInfo, extraQueryParams, extraTokenParams, ...optionalParams }: SigninRequestArgs, clockService: ClockService);
     // (undocumented)
     readonly state: SigninState;
     // (undocumented)
@@ -639,7 +649,7 @@ export interface SigninRequestArgs {
 
 // @public (undocumented)
 export class SigninResponse {
-    constructor(params: URLSearchParams);
+    constructor(params: URLSearchParams, _clockService: ClockService);
     // (undocumented)
     access_token: string;
     // (undocumented)
@@ -693,7 +703,7 @@ export class SigninState extends State {
         extraTokenParams?: Record<string, unknown>;
         response_mode?: "query" | "fragment";
         skipUserInfo?: boolean;
-    });
+    }, clockService: ClockService);
     // (undocumented)
     readonly authority: string;
     // (undocumented)
@@ -705,7 +715,7 @@ export class SigninState extends State {
     // (undocumented)
     readonly extraTokenParams: Record<string, unknown> | undefined;
     // (undocumented)
-    static fromStorageString(storageString: string): SigninState;
+    static fromStorageString(storageString: string, clockService: ClockService): SigninState;
     // (undocumented)
     readonly redirect_uri: string;
     // (undocumented)
@@ -726,7 +736,7 @@ export type SignoutRedirectArgs = RedirectParams & ExtraSignoutRequestArgs;
 
 // @public (undocumented)
 export class SignoutRequest {
-    constructor({ url, state_data, id_token_hint, post_logout_redirect_uri, extraQueryParams, request_type, }: SignoutRequestArgs);
+    constructor({ url, state_data, id_token_hint, post_logout_redirect_uri, extraQueryParams, request_type, }: SignoutRequestArgs, clockService: ClockService);
     // (undocumented)
     readonly state?: State;
     // (undocumented)
@@ -773,14 +783,16 @@ export class State {
         data?: unknown;
         created?: number;
         request_type?: string;
-    });
+    }, _clockService: ClockService);
     // (undocumented)
-    static clearStaleState(storage: StateStore, age: number): Promise<void>;
+    static clearStaleState(storage: StateStore, age: number, clockService: ClockService): Promise<void>;
+    // (undocumented)
+    readonly _clockService: ClockService;
     // (undocumented)
     readonly created: number;
     readonly data: unknown | undefined;
     // (undocumented)
-    static fromStorageString(storageString: string): State;
+    static fromStorageString(storageString: string, clockService: ClockService): State;
     // (undocumented)
     readonly id: string;
     // (undocumented)
@@ -813,14 +825,14 @@ export class User {
         profile: UserProfile;
         expires_at?: number;
         userState?: unknown;
-    });
+    }, _clockService: ClockService);
     access_token: string;
     get expired(): boolean | undefined;
     expires_at?: number;
     get expires_in(): number | undefined;
     set expires_in(value: number | undefined);
     // (undocumented)
-    static fromStorageString(storageString: string): User;
+    static fromStorageString(storageString: string, clockService: ClockService): User;
     id_token?: string;
     profile: UserProfile;
     refresh_token?: string;

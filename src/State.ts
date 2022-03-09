@@ -1,8 +1,9 @@
 // Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
-import { Logger, CryptoUtils, Timer } from "./utils";
+import { Logger, CryptoUtils } from "./utils";
 import type { StateStore } from "./StateStore";
+import type { ClockService } from "./ClockService";
 
 /**
  * @public
@@ -20,7 +21,7 @@ export class State {
         data?: unknown;
         created?: number;
         request_type?: string;
-    }) {
+    }, public readonly _clockService: ClockService) {
         this.id = args.id || CryptoUtils.generateUUIDv4();
         this.data = args.data;
 
@@ -28,7 +29,7 @@ export class State {
             this.created = args.created;
         }
         else {
-            this.created = Timer.getEpochTime();
+            this.created = this._clockService.getEpochTime();
         }
         this.request_type = args.request_type;
     }
@@ -43,13 +44,13 @@ export class State {
         });
     }
 
-    public static fromStorageString(storageString: string): State {
+    public static fromStorageString(storageString: string, clockService: ClockService): State {
         Logger.debug("State.fromStorageString");
-        return new State(JSON.parse(storageString));
+        return new State(JSON.parse(storageString), clockService);
     }
 
-    public static async clearStaleState(storage: StateStore, age: number): Promise<void> {
-        const cutoff = Timer.getEpochTime() - age;
+    public static async clearStaleState(storage: StateStore, age: number, clockService: ClockService): Promise<void> {
+        const cutoff = clockService.getEpochTime() - age;
 
         const keys = await storage.getAllKeys();
         Logger.debug("State.clearStaleState", "got keys", keys);
@@ -61,7 +62,7 @@ export class State {
 
             if (item) {
                 try {
-                    const state = State.fromStorageString(item);
+                    const state = State.fromStorageString(item, clockService);
 
                     Logger.debug("State.clearStaleState", "got item from key: ", key, state.created);
                     if (state.created <= cutoff) {
