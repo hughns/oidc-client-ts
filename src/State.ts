@@ -21,7 +21,7 @@ export class State {
         data?: unknown;
         created?: number;
         request_type?: string;
-    }, public readonly _clockService: ClockService) {
+    }, protected readonly _clockService: ClockService) {
         this.id = args.id || CryptoUtils.generateUUIDv4();
         this.data = args.data;
 

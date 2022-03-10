@@ -787,7 +787,7 @@ export class State {
     // (undocumented)
     static clearStaleState(storage: StateStore, age: number, clockService: ClockService): Promise<void>;
     // (undocumented)
-    readonly _clockService: ClockService;
+    protected readonly _clockService: ClockService;
     // (undocumented)
     readonly created: number;
     readonly data: unknown | undefined;
