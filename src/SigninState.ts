@@ -94,7 +94,7 @@ export class SigninState extends State {
     }
 
     public static fromStorageString(storageString: string, clockService: ClockService): SigninState {
-        Logger.debug("SigninState.fromStorageString");
+        new Logger("SigninState").create("fromStorageString");
         const data = JSON.parse(storageString);
         return new SigninState(data, clockService);
     }

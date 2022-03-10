@@ -118,7 +118,7 @@ export class User {
     }
 
     public static fromStorageString(storageString: string, clockService: ClockService): User {
-        Logger.debug("User.fromStorageString");
+        new Logger("User").create("fromStorageString");
         return new User(JSON.parse(storageString), clockService);
     }
 }
