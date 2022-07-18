@@ -165,4 +165,5 @@ export interface OidcMetadata {
      * https://www.rfc-editor.org/rfc/rfc8414.html
      */
     code_challenge_methods_supported: string[];
+    device_authorization_endpoint: string;
 }

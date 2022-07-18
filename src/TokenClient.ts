@@ -60,6 +60,15 @@ export interface RevokeArgs {
 /**
  * @internal
  */
+export interface DeviceAccessTokenArgs {
+    client_id?: string;
+    client_secret?: string;
+    device_code: string;
+}
+
+/**
+ * @internal
+ */
 export class TokenClient {
     private readonly _logger = new Logger("TokenClient");
     private readonly _jsonService;
@@ -264,5 +273,45 @@ export class TokenClient {
 
         await this._jsonService.postForm(url, { body: params });
         logger.debug("got response");
+    }
+
+    public async deviceAccessToken({
+        device_code,
+        client_id = this._settings.client_id,
+        client_secret = this._settings.client_secret,
+    }: DeviceAccessTokenArgs): Promise<Record<string, unknown>> {
+        const logger = this._logger.create("deviceAccessToken");
+        if (!client_id) {
+            logger.throw(new Error("A client_id is required"));
+        }
+        if (!device_code) {
+            logger.throw(new Error("A device_code is required"));
+        }
+
+        const params = new URLSearchParams({ device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" });
+        let basicAuth: string | undefined;
+        switch (this._settings.client_authentication) {
+            case "client_secret_basic":
+                if (!client_secret) {
+                    logger.throw(new Error("A client_secret is required"));
+                    throw null; // https://github.com/microsoft/TypeScript/issues/46972
+                }
+                basicAuth = CryptoUtils.generateBasicAuth(client_id, client_secret);
+                break;
+            case "client_secret_post":
+                params.append("client_id", client_id);
+                if (client_secret) {
+                    params.append("client_secret", client_secret);
+                }
+                break;
+        }
+
+        const url = await this._metadataService.getTokenEndpoint(false);
+        logger.debug("got token endpoint");
+
+        const response = await this._jsonService.postForm(url, { body: params, basicAuth });
+        logger.debug("got response");
+
+        return response;
     }
 }

@@ -3,7 +3,10 @@
 
 import { Logger, UrlUtils } from "./utils";
 import { ErrorResponse } from "./errors";
-import { type OidcClientSettings, OidcClientSettingsStore } from "./OidcClientSettings";
+import {
+    type OidcClientSettings,
+    OidcClientSettingsStore,
+} from "./OidcClientSettings";
 import { ResponseValidator } from "./ResponseValidator";
 import { MetadataService } from "./MetadataService";
 import type { RefreshState } from "./RefreshState";
@@ -15,12 +18,25 @@ import { SigninState } from "./SigninState";
 import { State } from "./State";
 import { TokenClient } from "./TokenClient";
 import { ClaimsService } from "./ClaimsService";
+import {
+    DeviceAuthorizationClient,
+    DeviceAuthorizationResponse,
+} from "./DeviceAuthorizationClient";
 
 /**
  * @public
  */
 export interface CreateSigninRequestArgs
-    extends Omit<SigninRequestCreateArgs, "url" | "authority" | "client_id" | "redirect_uri" | "response_type" | "scope" | "state_data"> {
+    extends Omit<
+        SigninRequestCreateArgs,
+        | "url"
+        | "authority"
+        | "client_id"
+        | "redirect_uri"
+        | "response_type"
+        | "scope"
+        | "state_data"
+    > {
     redirect_uri?: string;
     response_type?: string;
     scope?: string;
@@ -44,7 +60,10 @@ export interface UseRefreshTokenArgs {
 /**
  * @public
  */
-export type CreateSignoutRequestArgs = Omit<SignoutRequestArgs, "url" | "state_data"> & {
+export type CreateSignoutRequestArgs = Omit<
+    SignoutRequestArgs,
+    "url" | "state_data"
+> & {
     /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
 };
@@ -75,16 +94,39 @@ export class OidcClient {
     protected readonly _claimsService: ClaimsService;
     protected readonly _validator: ResponseValidator;
     protected readonly _tokenClient: TokenClient;
+    protected readonly _deviceAuthorizationClient: DeviceAuthorizationClient;
 
     public constructor(settings: OidcClientSettings);
-    public constructor(settings: OidcClientSettingsStore, metadataService: MetadataService);
-    public constructor(settings: OidcClientSettings | OidcClientSettingsStore, metadataService?: MetadataService) {
-        this.settings = settings instanceof OidcClientSettingsStore ? settings : new OidcClientSettingsStore(settings);
+    public constructor(
+        settings: OidcClientSettingsStore,
+        metadataService: MetadataService
+    );
+    public constructor(
+        settings: OidcClientSettings | OidcClientSettingsStore,
+        metadataService?: MetadataService
+    ) {
+        this.settings =
+            settings instanceof OidcClientSettingsStore
+                ? settings
+                : new OidcClientSettingsStore(settings);
 
-        this.metadataService = metadataService ?? new MetadataService(this.settings);
+        this.metadataService =
+            metadataService ?? new MetadataService(this.settings);
         this._claimsService = new ClaimsService(this.settings);
-        this._validator = new ResponseValidator(this.settings, this.metadataService, this._claimsService);
-        this._tokenClient = new TokenClient(this.settings, this.metadataService);
+        this._validator = new ResponseValidator(
+            this.settings,
+            this.metadataService,
+            this._claimsService
+        );
+        this._tokenClient = new TokenClient(
+            this.settings,
+            this.metadataService
+        );
+        this._deviceAuthorizationClient = new DeviceAuthorizationClient(
+            this.settings,
+            this.metadataService,
+            this._tokenClient
+        );
     }
 
     public async createSigninRequest({
@@ -113,7 +155,9 @@ export class OidcClient {
         const logger = this._logger.create("createSigninRequest");
 
         if (response_type !== "code") {
-            throw new Error("Only the Authorization Code flow (with PKCE) is supported");
+            throw new Error(
+                "Only the Authorization Code flow (with PKCE) is supported"
+            );
         }
 
         const url = await this.metadataService.getAuthorizationEndpoint();
@@ -128,8 +172,20 @@ export class OidcClient {
             scope,
             state_data: state,
             url_state,
-            prompt, display, max_age, ui_locales, id_token_hint, login_hint, acr_values,
-            resource, request, request_uri, extraQueryParams, extraTokenParams, request_type, response_mode,
+            prompt,
+            display,
+            max_age,
+            ui_locales,
+            id_token_hint,
+            login_hint,
+            acr_values,
+            resource,
+            request,
+            request_uri,
+            extraQueryParams,
+            extraTokenParams,
+            request_type,
+            response_mode,
             client_secret: this.settings.client_secret,
             skipUserInfo,
             nonce,
@@ -140,21 +196,31 @@ export class OidcClient {
         await this.clearStaleState();
 
         const signinState = signinRequest.state;
-        await this.settings.stateStore.set(signinState.id, signinState.toStorageString());
+        await this.settings.stateStore.set(
+            signinState.id,
+            signinState.toStorageString()
+        );
         return signinRequest;
     }
 
-    public async readSigninResponseState(url: string, removeState = false): Promise<{ state: SigninState; response: SigninResponse }> {
+    public async readSigninResponseState(
+        url: string,
+        removeState = false
+    ): Promise<{ state: SigninState; response: SigninResponse }> {
         const logger = this._logger.create("readSigninResponseState");
 
-        const response = new SigninResponse(UrlUtils.readParams(url, this.settings.response_mode));
+        const response = new SigninResponse(
+            UrlUtils.readParams(url, this.settings.response_mode)
+        );
         if (!response.state) {
             logger.throw(new Error("No state in response"));
             // need to throw within this function's body for type narrowing to work
             throw null; // https://github.com/microsoft/TypeScript/issues/46972
         }
 
-        const storedStateString = await this.settings.stateStore[removeState ? "remove" : "get"](response.state);
+        const storedStateString = await this.settings.stateStore[
+            removeState ? "remove" : "get"
+        ](response.state);
         if (!storedStateString) {
             logger.throw(new Error("No matching state found in storage"));
             throw null; // https://github.com/microsoft/TypeScript/issues/46972
@@ -167,7 +233,10 @@ export class OidcClient {
     public async processSigninResponse(url: string): Promise<SigninResponse> {
         const logger = this._logger.create("processSigninResponse");
 
-        const { state, response } = await this.readSigninResponseState(url, true);
+        const { state, response } = await this.readSigninResponseState(
+            url,
+            true
+        );
         logger.debug("received state from storage; validating response");
         await this._validator.validateSigninResponse(response, state);
         return response;
@@ -179,10 +248,20 @@ export class OidcClient {
         skipUserInfo = false,
         extraTokenParams = {},
     }: ProcessResourceOwnerPasswordCredentialsArgs): Promise<SigninResponse> {
-        const tokenResponse: Record<string, unknown> = await this._tokenClient.exchangeCredentials({ username, password, ...extraTokenParams });
-        const signinResponse: SigninResponse = new SigninResponse(new URLSearchParams());
+        const tokenResponse: Record<string, unknown> =
+            await this._tokenClient.exchangeCredentials({
+                username,
+                password,
+                ...extraTokenParams,
+            });
+        const signinResponse: SigninResponse = new SigninResponse(
+            new URLSearchParams()
+        );
         Object.assign(signinResponse, tokenResponse);
-        await this._validator.validateCredentialsResponse(signinResponse, skipUserInfo);
+        await this._validator.validateCredentialsResponse(
+            signinResponse,
+            skipUserInfo
+        );
         return signinResponse;
     }
 
@@ -202,10 +281,13 @@ export class OidcClient {
         if (this.settings.refreshTokenAllowedScope === undefined) {
             scope = state.scope;
         } else {
-            const allowableScopes = this.settings.refreshTokenAllowedScope.split(" ");
+            const allowableScopes =
+                this.settings.refreshTokenAllowedScope.split(" ");
             const providedScopes = state.scope?.split(" ") || [];
 
-            scope = providedScopes.filter(s => allowableScopes.includes(s)).join(" ");
+            scope = providedScopes
+                .filter((s) => allowableScopes.includes(s))
+                .join(" ");
         }
 
         const result = await this._tokenClient.exchangeRefreshToken({
@@ -268,16 +350,24 @@ export class OidcClient {
         const signoutState = request.state;
         if (signoutState) {
             logger.debug("Signout request has state to persist");
-            await this.settings.stateStore.set(signoutState.id, signoutState.toStorageString());
+            await this.settings.stateStore.set(
+                signoutState.id,
+                signoutState.toStorageString()
+            );
         }
 
         return request;
     }
 
-    public async readSignoutResponseState(url: string, removeState = false): Promise<{ state: State | undefined; response: SignoutResponse }> {
+    public async readSignoutResponseState(
+        url: string,
+        removeState = false
+    ): Promise<{ state: State | undefined; response: SignoutResponse }> {
         const logger = this._logger.create("readSignoutResponseState");
 
-        const response = new SignoutResponse(UrlUtils.readParams(url, this.settings.response_mode));
+        const response = new SignoutResponse(
+            UrlUtils.readParams(url, this.settings.response_mode)
+        );
         if (!response.state) {
             logger.debug("No state in response");
 
@@ -289,7 +379,9 @@ export class OidcClient {
             return { state: undefined, response };
         }
 
-        const storedStateString = await this.settings.stateStore[removeState ? "remove" : "get"](response.state);
+        const storedStateString = await this.settings.stateStore[
+            removeState ? "remove" : "get"
+        ](response.state);
         if (!storedStateString) {
             logger.throw(new Error("No matching state found in storage"));
             throw null; // https://github.com/microsoft/TypeScript/issues/46972
@@ -302,7 +394,10 @@ export class OidcClient {
     public async processSignoutResponse(url: string): Promise<SignoutResponse> {
         const logger = this._logger.create("processSignoutResponse");
 
-        const { state, response } = await this.readSignoutResponseState(url, true);
+        const { state, response } = await this.readSignoutResponseState(
+            url,
+            true
+        );
         if (state) {
             logger.debug("Received state from storage; validating response");
             this._validator.validateSignoutResponse(response, state);
@@ -315,14 +410,67 @@ export class OidcClient {
 
     public clearStaleState(): Promise<void> {
         this._logger.create("clearStaleState");
-        return State.clearStaleState(this.settings.stateStore, this.settings.staleStateAgeInSeconds);
+        return State.clearStaleState(
+            this.settings.stateStore,
+            this.settings.staleStateAgeInSeconds
+        );
     }
 
-    public async revokeToken(token: string, type?: "access_token" | "refresh_token"): Promise<void> {
+    public async revokeToken(
+        token: string,
+        type?: "access_token" | "refresh_token"
+    ): Promise<void> {
         this._logger.create("revokeToken");
         return await this._tokenClient.revoke({
             token,
             token_type_hint: type,
         });
+    }
+
+    public async startDeviceAuthorization(
+        scope?: string
+    ): Promise<DeviceAuthorizationResponse> {
+        this._logger.create("startDeviceAuthorization");
+        return await this._deviceAuthorizationClient.startDeviceAuthorization({
+            scope,
+        });
+    }
+
+    public async waitForDeviceAuthorization(
+        params: DeviceAuthorizationResponse
+    ): Promise<Record<string, unknown>> {
+        this._logger.create("waitForDeviceAuthorization");
+        let interval = (params.interval ?? 5) * 1000; // poll interval
+        const expiration = Date.now() + params.expires_in * 1000;
+        do {
+            try {
+                const res =
+                    await this._deviceAuthorizationClient.waitForDeviceAuthorization(
+                        params
+                    );
+                return res;
+            } catch (e) {
+                if (e instanceof ErrorResponse) {
+                    switch (e.error) {
+                        case "authorization_pending":
+                            break;
+                        case "slow_down":
+                            interval += 5000;
+                            break;
+                        case "access_denied":
+                        case "expired_token":
+                            return {
+                                error: e.error,
+                                error_description: e.error_description,
+                                error_uri: e.error_uri,
+                                session_state: e.session_state,
+                            };
+                    }
+                }
+            }
+            this._logger.info("Waiting for device authorization", { interval });
+            await new Promise((resolve) => setTimeout(resolve, interval));
+        } while (Date.now() < expiration);
+        return { error: "expired" };
     }
 }
