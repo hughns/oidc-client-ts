@@ -1,13 +1,13 @@
-.idea
 
 # build artifacts
 *.tsbuildinfo
-/lib/
+# /lib/
 /coverage/
 /docs/pages/
 
-**/dist/*
-/dist/esm/*
+# **/dist/*
+# /dist/esm/*
+# !/dist/esm/package.json
 
 # caches
 .eslintcache

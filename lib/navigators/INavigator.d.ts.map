@@ -1,0 +1,1 @@
+{"version":3,"file":"INavigator.d.ts","sourceRoot":"","sources":["../../src/navigators/INavigator.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,WAAW,CAAC;AAEzC;;GAEG;AACH,MAAM,WAAW,UAAU;IACvB,OAAO,CAAC,MAAM,EAAE,OAAO,GAAG,OAAO,CAAC,OAAO,CAAC,CAAC;CAC9C"}
