@@ -20,6 +20,7 @@ export interface DeviceAuthorizationRequest {
 export interface DeviceAuthorizationRequestArgs {
     client_id?: string;
     scope?: string;
+    nonce?: string;
 }
 
 /**
@@ -59,6 +60,7 @@ export class DeviceAuthorizationClient {
     public async startDeviceAuthorization({
         client_id = this._settings.client_id,
         scope,
+        nonce,
     }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse> {
         const logger = this._logger.create("startDeviceAuthorization");
 
@@ -67,6 +69,9 @@ export class DeviceAuthorizationClient {
         }
 
         const params = new URLSearchParams({ client_id, scope: scope ?? this._settings.scope });
+        if (nonce) {
+            params.set("nonce", nonce);
+        }
 
         const url = (await this._metadataService.getMetadata()).device_authorization_endpoint;
         if (!url) {

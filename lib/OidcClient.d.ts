@@ -10,7 +10,7 @@ import { SignoutResponse } from "./SignoutResponse";
 import { SigninState } from "./SigninState";
 import { State } from "./State";
 import { TokenClient } from "./TokenClient";
-import { DeviceAuthorizationClient, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import { DeviceAuthorizationClient, DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
 /**
  * @public
  */
@@ -82,7 +82,7 @@ export declare class OidcClient {
     processSignoutResponse(url: string): Promise<SignoutResponse>;
     clearStaleState(): Promise<void>;
     revokeToken(token: string, type?: "access_token" | "refresh_token"): Promise<void>;
-    startDeviceAuthorization(scope?: string): Promise<DeviceAuthorizationResponse>;
+    startDeviceAuthorization(args: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
 }
 //# sourceMappingURL=OidcClient.d.ts.map

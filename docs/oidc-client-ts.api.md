@@ -436,11 +436,12 @@ export class OidcClient {
     ): Promise<void>;
     // (undocumented)
     readonly settings: OidcClientSettingsStore;
+    // Warning: (ae-forgotten-export) The symbol "DeviceAuthorizationRequestArgs" needs to be exported by the entry point index.d.ts
     // Warning: (ae-incompatible-release-tags) The symbol "startDeviceAuthorization" is marked as @public, but its signature references "DeviceAuthorizationResponse" which is marked as @internal
     //
     // (undocumented)
     startDeviceAuthorization(
-        scope?: string
+        args: DeviceAuthorizationRequestArgs
     ): Promise<DeviceAuthorizationResponse>;
     // Warning: (ae-forgotten-export) The symbol "TokenClient" needs to be exported by the entry point index.d.ts
     //
@@ -1232,7 +1233,7 @@ export class UserManager {
     //
     // (undocumented)
     startDeviceAuthorization(
-        scope?: string
+        args?: DeviceAuthorizationRequestArgs
     ): Promise<DeviceAuthorizationResponse>;
     startSilentRenew(): void;
     stopSilentRenew(): void;

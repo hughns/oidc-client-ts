@@ -1457,13 +1457,17 @@ var DeviceAuthorizationClient = class {
   }
   async startDeviceAuthorization({
     client_id = this._settings.client_id,
-    scope
+    scope,
+    nonce
   }) {
     const logger2 = this._logger.create("startDeviceAuthorization");
     if (!client_id) {
       logger2.throw(new Error("A client_id is required"));
     }
     const params = new URLSearchParams({ client_id, scope: scope != null ? scope : this._settings.scope });
+    if (nonce) {
+      params.set("nonce", nonce);
+    }
     const url = (await this._metadataService.getMetadata()).device_authorization_endpoint;
     if (!url) {
       logger2.throw(new Error("No device_authorization_endpoint given"));
@@ -1660,11 +1664,9 @@ var OidcClient = class {
       token_type_hint: type
     });
   }
-  async startDeviceAuthorization(scope) {
+  async startDeviceAuthorization(args) {
     this._logger.create("startDeviceAuthorization");
-    return await this._deviceAuthorizationClient.startDeviceAuthorization({
-      scope
-    });
+    return await this._deviceAuthorizationClient.startDeviceAuthorization(args);
   }
   async waitForDeviceAuthorization(params) {
     var _a;
@@ -2716,8 +2718,8 @@ var UserManager = class {
   async clearStaleState() {
     await this._client.clearStaleState();
   }
-  async startDeviceAuthorization(scope) {
-    return await this._client.startDeviceAuthorization(scope);
+  async startDeviceAuthorization(args) {
+    return await this._client.startDeviceAuthorization(args != null ? args : {});
   }
   async waitForDeviceAuthorization(params) {
     var _a;

@@ -10,7 +10,7 @@ import type { SessionStatus } from "./SessionStatus";
 import type { SignoutResponse } from "./SignoutResponse";
 import type { MetadataService } from "./MetadataService";
 import { RefreshState } from "./RefreshState";
-import type { DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import type { DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
 /**
  * @public
  */
@@ -148,7 +148,7 @@ export declare class UserManager {
      * Removes stale state entries in storage for incomplete authorize requests.
      */
     clearStaleState(): Promise<void>;
-    startDeviceAuthorization(scope?: string): Promise<DeviceAuthorizationResponse>;
+    startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
 }
 //# sourceMappingURL=UserManager.d.ts.map

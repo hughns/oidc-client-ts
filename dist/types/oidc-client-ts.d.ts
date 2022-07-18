@@ -131,7 +131,7 @@ declare class DeviceAuthorizationClient {
     private readonly _jsonService;
     private _responseInProgress?;
     constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService, _tokenClient: TokenClient);
-    startDeviceAuthorization({ client_id, scope, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
+    startDeviceAuthorization({ client_id, scope, nonce, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
     waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
 }
 
@@ -141,6 +141,7 @@ declare class DeviceAuthorizationClient {
 declare interface DeviceAuthorizationRequestArgs {
     client_id?: string;
     scope?: string;
+    nonce?: string;
 }
 
 /**
@@ -523,7 +524,7 @@ export declare class OidcClient {
     processSignoutResponse(url: string): Promise<SignoutResponse>;
     clearStaleState(): Promise<void>;
     revokeToken(token: string, type?: "access_token" | "refresh_token"): Promise<void>;
-    startDeviceAuthorization(scope?: string): Promise<DeviceAuthorizationResponse>;
+    startDeviceAuthorization(args: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
 }
 
@@ -1326,7 +1327,7 @@ export declare class UserManager {
      * Removes stale state entries in storage for incomplete authorize requests.
      */
     clearStaleState(): Promise<void>;
-    startDeviceAuthorization(scope?: string): Promise<DeviceAuthorizationResponse>;
+    startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
 }
 

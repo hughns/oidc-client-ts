@@ -34,7 +34,10 @@ import type { SignoutResponse } from "./SignoutResponse";
 import type { MetadataService } from "./MetadataService";
 import { RefreshState } from "./RefreshState";
 import type { SigninResponse } from "./SigninResponse";
-import type { DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import type {
+    DeviceAuthorizationRequestArgs,
+    DeviceAuthorizationResponse,
+} from "./DeviceAuthorizationClient";
 
 /**
  * @public
@@ -907,9 +910,9 @@ export class UserManager {
     }
 
     public async startDeviceAuthorization(
-        scope?: string
+        args?: DeviceAuthorizationRequestArgs
     ): Promise<DeviceAuthorizationResponse> {
-        return await this._client.startDeviceAuthorization(scope);
+        return await this._client.startDeviceAuthorization(args ?? {});
     }
 
     public async waitForDeviceAuthorization(

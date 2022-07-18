@@ -18,8 +18,9 @@ import { SigninState } from "./SigninState";
 import { State } from "./State";
 import { TokenClient } from "./TokenClient";
 import { ClaimsService } from "./ClaimsService";
-import {
-    DeviceAuthorizationClient,
+import { DeviceAuthorizationClient } from "./DeviceAuthorizationClient";
+import type {
+    DeviceAuthorizationRequestArgs,
     DeviceAuthorizationResponse,
 } from "./DeviceAuthorizationClient";
 
@@ -428,12 +429,12 @@ export class OidcClient {
     }
 
     public async startDeviceAuthorization(
-        scope?: string
+        args: DeviceAuthorizationRequestArgs
     ): Promise<DeviceAuthorizationResponse> {
         this._logger.create("startDeviceAuthorization");
-        return await this._deviceAuthorizationClient.startDeviceAuthorization({
-            scope,
-        });
+        return await this._deviceAuthorizationClient.startDeviceAuthorization(
+            args
+        );
     }
 
     public async waitForDeviceAuthorization(
