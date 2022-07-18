@@ -2044,10 +2044,7 @@ var oidc = (() => {
       if (!client_id) {
         logger2.throw(new Error("A client_id is required"));
       }
-      const params = new URLSearchParams({ client_id });
-      if (scope) {
-        params.set("scope", scope);
-      }
+      const params = new URLSearchParams({ client_id, scope: scope != null ? scope : this._settings.scope });
       const url = (await this._metadataService.getMetadata()).device_authorization_endpoint;
       if (!url) {
         logger2.throw(new Error("No device_authorization_endpoint given"));
