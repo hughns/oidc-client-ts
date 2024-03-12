@@ -29,14 +29,14 @@ import type {
  */
 export interface CreateSigninRequestArgs
     extends Omit<
-        SigninRequestCreateArgs,
-        | "url"
-        | "authority"
-        | "client_id"
-        | "redirect_uri"
-        | "response_type"
-        | "scope"
-        | "state_data"
+    SigninRequestCreateArgs,
+    | "url"
+    | "authority"
+    | "client_id"
+    | "redirect_uri"
+    | "response_type"
+    | "scope"
+    | "state_data"
     > {
     redirect_uri?: string;
     response_type?: string;
@@ -62,8 +62,8 @@ export interface UseRefreshTokenArgs {
  * @public
  */
 export type CreateSignoutRequestArgs = Omit<
-    SignoutRequestArgs,
-    "url" | "state_data"
+SignoutRequestArgs,
+"url" | "state_data"
 > & {
     /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
@@ -104,7 +104,7 @@ export class OidcClient {
     );
     public constructor(
         settings: OidcClientSettings | OidcClientSettingsStore,
-        metadataService?: MetadataService
+        metadataService?: MetadataService,
     ) {
         this.settings =
             settings instanceof OidcClientSettingsStore
@@ -117,16 +117,16 @@ export class OidcClient {
         this._validator = new ResponseValidator(
             this.settings,
             this.metadataService,
-            this._claimsService
+            this._claimsService,
         );
         this._tokenClient = new TokenClient(
             this.settings,
-            this.metadataService
+            this.metadataService,
         );
         this._deviceAuthorizationClient = new DeviceAuthorizationClient(
             this.settings,
             this.metadataService,
-            this._tokenClient
+            this._tokenClient,
         );
     }
 
@@ -157,7 +157,7 @@ export class OidcClient {
 
         if (response_type !== "code") {
             throw new Error(
-                "Only the Authorization Code flow (with PKCE) is supported"
+                "Only the Authorization Code flow (with PKCE) is supported",
             );
         }
 
@@ -199,19 +199,19 @@ export class OidcClient {
         const signinState = signinRequest.state;
         await this.settings.stateStore.set(
             signinState.id,
-            signinState.toStorageString()
+            signinState.toStorageString(),
         );
         return signinRequest;
     }
 
     public async readSigninResponseState(
         url: string,
-        removeState = false
+        removeState = false,
     ): Promise<{ state: SigninState; response: SigninResponse }> {
         const logger = this._logger.create("readSigninResponseState");
 
         const response = new SigninResponse(
-            UrlUtils.readParams(url, this.settings.response_mode)
+            UrlUtils.readParams(url, this.settings.response_mode),
         );
         if (!response.state) {
             logger.throw(new Error("No state in response"));
@@ -236,7 +236,7 @@ export class OidcClient {
 
         const { state, response } = await this.readSigninResponseState(
             url,
-            true
+            true,
         );
         logger.debug("received state from storage; validating response");
         await this._validator.validateSigninResponse(response, state);
@@ -256,12 +256,12 @@ export class OidcClient {
                 ...extraTokenParams,
             });
         const signinResponse: SigninResponse = new SigninResponse(
-            new URLSearchParams()
+            new URLSearchParams(),
         );
         Object.assign(signinResponse, tokenResponse);
         await this._validator.validateCredentialsResponse(
             signinResponse,
-            skipUserInfo
+            skipUserInfo,
         );
         return signinResponse;
     }
@@ -353,7 +353,7 @@ export class OidcClient {
             logger.debug("Signout request has state to persist");
             await this.settings.stateStore.set(
                 signoutState.id,
-                signoutState.toStorageString()
+                signoutState.toStorageString(),
             );
         }
 
@@ -362,12 +362,12 @@ export class OidcClient {
 
     public async readSignoutResponseState(
         url: string,
-        removeState = false
+        removeState = false,
     ): Promise<{ state: State | undefined; response: SignoutResponse }> {
         const logger = this._logger.create("readSignoutResponseState");
 
         const response = new SignoutResponse(
-            UrlUtils.readParams(url, this.settings.response_mode)
+            UrlUtils.readParams(url, this.settings.response_mode),
         );
         if (!response.state) {
             logger.debug("No state in response");
@@ -397,7 +397,7 @@ export class OidcClient {
 
         const { state, response } = await this.readSignoutResponseState(
             url,
-            true
+            true,
         );
         if (state) {
             logger.debug("Received state from storage; validating response");
@@ -413,13 +413,13 @@ export class OidcClient {
         this._logger.create("clearStaleState");
         return State.clearStaleState(
             this.settings.stateStore,
-            this.settings.staleStateAgeInSeconds
+            this.settings.staleStateAgeInSeconds,
         );
     }
 
     public async revokeToken(
         token: string,
-        type?: "access_token" | "refresh_token"
+        type?: "access_token" | "refresh_token",
     ): Promise<void> {
         this._logger.create("revokeToken");
         return await this._tokenClient.revoke({
@@ -429,16 +429,16 @@ export class OidcClient {
     }
 
     public async startDeviceAuthorization(
-        args: DeviceAuthorizationRequestArgs
+        args: DeviceAuthorizationRequestArgs,
     ): Promise<DeviceAuthorizationResponse> {
         this._logger.create("startDeviceAuthorization");
         return await this._deviceAuthorizationClient.startDeviceAuthorization(
-            args
+            args,
         );
     }
 
     public async waitForDeviceAuthorization(
-        params: DeviceAuthorizationResponse
+        params: DeviceAuthorizationResponse,
     ): Promise<Record<string, unknown>> {
         this._logger.create("waitForDeviceAuthorization");
         let interval = (params.interval ?? 5) * 1000; // poll interval
@@ -447,7 +447,7 @@ export class OidcClient {
             try {
                 const res =
                     await this._deviceAuthorizationClient.waitForDeviceAuthorization(
-                        params
+                        params,
                     );
                 return res;
             } catch (e) {
