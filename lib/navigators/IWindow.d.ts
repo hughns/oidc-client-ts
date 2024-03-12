@@ -1,5 +1,5 @@
 /**
- * @internal
+ * @public
  */
 export interface NavigateParams {
     url: string;
@@ -11,13 +11,13 @@ export interface NavigateParams {
     scriptOrigin?: string;
 }
 /**
- * @internal
+ * @public
  */
 export interface NavigateResponse {
     url: string;
 }
 /**
- * @internal
+ * @public
  */
 export interface IWindow {
     navigate(params: NavigateParams): Promise<NavigateResponse>;

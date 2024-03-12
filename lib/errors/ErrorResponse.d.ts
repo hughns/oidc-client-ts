@@ -1,9 +1,8 @@
 /**
  * Error class thrown in case of an authentication error.
  *
- * See https://openid.net/specs/openid-connect-core-1_0.html#AuthError
- *
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class ErrorResponse extends Error {
     /** The x-www-form-urlencoded request body sent to the authority server */
@@ -22,12 +21,14 @@ export declare class ErrorResponse extends Error {
     /** custom state data set during the initial signin request */
     state?: unknown;
     readonly session_state: string | null;
+    url_state?: string;
     constructor(args: {
         error?: string | null;
         error_description?: string | null;
         error_uri?: string | null;
         userState?: unknown;
         session_state?: string | null;
+        url_state?: string;
     }, 
     /** The x-www-form-urlencoded request body sent to the authority server */
     form?: URLSearchParams | undefined);

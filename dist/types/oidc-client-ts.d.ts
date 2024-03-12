@@ -1,21 +1,4 @@
 /**
- * Window implementation which resolves via communication from a child window
- * via the `Window.postMessage()` interface.
- *
- * @internal
- */
-declare abstract class AbstractChildWindow implements IWindow {
-    protected abstract readonly _logger: Logger;
-    protected readonly _abort: Event_2<[reason: Error]>;
-    protected readonly _disposeHandlers: Set<() => void>;
-    protected _window: WindowProxy | null;
-    navigate(params: NavigateParams): Promise<NavigateResponse>;
-    abstract close(): void;
-    private _dispose;
-    protected static _notifyParent(parent: Window, url: string, keepOpen?: boolean, targetOrigin?: string): void;
-}
-
-/**
  * @public
  */
 export declare type AccessTokenCallback = (...ev: unknown[]) => (Promise<void> | void);
@@ -52,9 +35,36 @@ export declare class AccessTokenEvents {
 }
 
 /**
- * @internal
+ * @public
  */
-declare type Callback<EventType extends unknown[]> = (...ev: EventType) => (Promise<void> | void);
+export declare interface AsyncStorage {
+    /** Returns the number of key/value pairs. */
+    readonly length: Promise<number>;
+    /**
+     * Removes all key/value pairs, if there are any.
+     *
+     * Dispatches a storage event on Window objects holding an equivalent Storage object.
+     */
+    clear(): Promise<void>;
+    /** Returns the current value associated with the given key, or null if the given key does not exist. */
+    getItem(key: string): Promise<string | null>;
+    /** Returns the name of the nth key, or null if n is greater than or equal to the number of key/value pairs. */
+    key(index: number): Promise<string | null>;
+    /**
+     * Removes the key/value pair with the given key, if a key/value pair with the given key exists.
+     *
+     * Dispatches a storage event on Window objects holding an equivalent Storage object.
+     */
+    removeItem(key: string): Promise<void>;
+    /**
+     * Sets the value of the pair identified by key to value, creating a new key/value pair if none existed for key previously.
+     *
+     * Throws a "QuotaExceededError" DOMException exception if the new value couldn't be set. (Setting could fail if, e.g., the user has disabled storage for the site, or if the quota has been exceeded.)
+     *
+     * Dispatches a storage event on Window objects holding an equivalent Storage object.
+     */
+    setItem(key: string, value: string): Promise<void>;
+}
 
 /**
  * @internal
@@ -77,37 +87,32 @@ export declare class CheckSessionIFrame {
 }
 
 /**
+ * @internal
+ */
+declare class ClaimsService {
+    protected readonly _settings: OidcClientSettingsStore;
+    protected readonly _logger: Logger;
+    constructor(_settings: OidcClientSettingsStore);
+    filterProtocolClaims(claims: UserProfile): UserProfile;
+    mergeClaims(claims1: JwtClaims, claims2: JwtClaims): UserProfile;
+}
+
+/**
  * @public
  */
-export declare interface CreateSigninRequestArgs {
+export declare interface CreateSigninRequestArgs extends Omit<SigninRequestCreateArgs, "url" | "authority" | "client_id" | "redirect_uri" | "response_type" | "scope" | "state_data"> {
     redirect_uri?: string;
     response_type?: string;
     scope?: string;
-    nonce?: string;
     /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
-    prompt?: string;
-    display?: string;
-    max_age?: number;
-    ui_locales?: string;
-    id_token_hint?: string;
-    login_hint?: string;
-    acr_values?: string;
-    resource?: string;
-    response_mode?: "query" | "fragment";
-    request?: string;
-    request_uri?: string;
-    extraQueryParams?: Record<string, string | number | boolean>;
-    request_type?: string;
-    client_secret?: string;
-    extraTokenParams?: Record<string, unknown>;
-    skipUserInfo?: boolean;
 }
 
 /**
  * @public
  */
 export declare type CreateSignoutRequestArgs = Omit<SignoutRequestArgs, "url" | "state_data"> & {
+    /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
 };
 
@@ -159,9 +164,8 @@ export declare interface DeviceAuthorizationResponse {
 /**
  * Error class thrown in case of an authentication error.
  *
- * See https://openid.net/specs/openid-connect-core-1_0.html#AuthError
- *
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class ErrorResponse extends Error {
     /** The x-www-form-urlencoded request body sent to the authority server */
@@ -180,12 +184,14 @@ export declare class ErrorResponse extends Error {
     /** custom state data set during the initial signin request */
     state?: unknown;
     readonly session_state: string | null;
+    url_state?: string;
     constructor(args: {
         error?: string | null;
         error_description?: string | null;
         error_uri?: string | null;
         userState?: unknown;
         session_state?: string | null;
+        url_state?: string;
     }, 
     /** The x-www-form-urlencoded request body sent to the authority server */
     form?: URLSearchParams | undefined);
@@ -205,19 +211,6 @@ export declare class ErrorTimeout extends Error {
 /**
  * @internal
  */
-declare class Event_2<EventType extends unknown[]> {
-    protected readonly _name: string;
-    protected readonly _logger: Logger;
-    private _callbacks;
-    constructor(_name: string);
-    addHandler(cb: Callback<EventType>): () => void;
-    removeHandler(cb: Callback<EventType>): void;
-    raise(...ev: EventType): void;
-}
-
-/**
- * @internal
- */
 declare interface ExchangeCodeArgs {
     client_id?: string;
     client_secret?: string;
@@ -230,19 +223,38 @@ declare interface ExchangeCodeArgs {
 /**
  * @internal
  */
-declare interface ExchangeRefreshTokenArgs {
+declare interface ExchangeCredentialsArgs {
     client_id?: string;
     client_secret?: string;
     grant_type?: string;
+    scope?: string;
+    username: string;
+    password: string;
+}
+
+/**
+ * @internal
+ */
+declare interface ExchangeRefreshTokenArgs {
+    client_id?: string;
+    client_secret?: string;
+    redirect_uri?: string;
+    grant_type?: string;
     refresh_token: string;
     scope?: string;
+    resource?: string | string[];
     timeoutInSeconds?: number;
 }
 
 /**
  * @public
  */
-export declare type ExtraSigninRequestArgs = Pick<CreateSigninRequestArgs, "nonce" | "extraQueryParams" | "extraTokenParams" | "state" | "redirect_uri" | "prompt">;
+export declare type ExtraHeader = string | (() => string);
+
+/**
+ * @public
+ */
+export declare type ExtraSigninRequestArgs = Pick<CreateSigninRequestArgs, "nonce" | "extraQueryParams" | "extraTokenParams" | "state" | "redirect_uri" | "prompt" | "acr_values" | "login_hint" | "scope" | "max_age" | "ui_locales" | "resource" | "url_state">;
 
 /**
  * @public
@@ -255,7 +267,7 @@ export declare type ExtraSignoutRequestArgs = Pick<CreateSignoutRequestArgs, "ex
  * @public
  * @see https://openid.net/specs/openid-connect-core-1_0.html#IDToken
  */
-export declare interface IdTokenClaims extends Mandatory<OidcStandardClaims, "sub">, Mandatory<JwtClaims, "iss" | "sub" | "aud" | "exp" | "iat"> {
+export declare interface IdTokenClaims extends Mandatory<OidcStandardClaims, "sub">, Mandatory<JwtClaims, "iss" | "sub" | "aud" | "exp" | "iat">, Pick<JwtClaims, "nbf" | "jti"> {
     [claim: string]: unknown;
     /** Time when the End-User authentication occurred. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time. When a max_age request is made or when auth_time is requested as an Essential Claim, then this Claim is REQUIRED; otherwise, its inclusion is OPTIONAL. (The auth_time Claim semantically corresponds to the OpenID 2.0 PAPE [OpenID.PAPE] auth_time response parameter.) */
     auth_time?: number;
@@ -272,31 +284,6 @@ export declare interface IdTokenClaims extends Mandatory<OidcStandardClaims, "su
      * @see https://openid.net/specs/openid-connect-frontchannel-1_0.html#OPLogout
      * */
     sid?: string;
-}
-
-/**
- * @internal
- */
-declare class IFrameNavigator implements INavigator {
-    private _settings;
-    private readonly _logger;
-    constructor(_settings: UserManagerSettingsStore);
-    prepare({ silentRequestTimeoutInSeconds, }: IFrameWindowParams): Promise<IFrameWindow>;
-    callback(url: string): Promise<void>;
-}
-
-/**
- * @internal
- */
-declare class IFrameWindow extends AbstractChildWindow {
-    protected readonly _logger: Logger;
-    private _frame;
-    private _timeoutInSeconds;
-    constructor({ silentRequestTimeoutInSeconds, }: IFrameWindowParams);
-    private static createHiddenIframe;
-    navigate(params: NavigateParams): Promise<NavigateResponse>;
-    close(): void;
-    static notifyParent(url: string, targetOrigin?: string): void;
 }
 
 /**
@@ -319,10 +306,11 @@ export declare interface ILogger {
 }
 
 /**
- * @internal
+ * @public
  */
-declare interface INavigator {
+export declare interface INavigator {
     prepare(params: unknown): Promise<IWindow>;
+    callback(url: string, params?: unknown): Promise<void>;
 }
 
 /**
@@ -340,9 +328,9 @@ export declare class InMemoryWebStorage implements Storage {
 }
 
 /**
- * @internal
+ * @public
  */
-declare interface IWindow {
+export declare interface IWindow {
     navigate(params: NavigateParams): Promise<NavigateResponse>;
     close(): void;
 }
@@ -425,6 +413,7 @@ declare type Mandatory<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>
 
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
  */
 export declare class MetadataService {
     private readonly _settings;
@@ -433,6 +422,7 @@ export declare class MetadataService {
     private _metadataUrl;
     private _signingKeys;
     private _metadata;
+    private _fetchRequestCredentials;
     constructor(_settings: OidcClientSettingsStore);
     resetSigningKeys(): void;
     getMetadata(): Promise<Partial<OidcMetadata>>;
@@ -452,9 +442,9 @@ export declare class MetadataService {
 }
 
 /**
- * @internal
+ * @public
  */
-declare interface NavigateParams {
+export declare interface NavigateParams {
     url: string;
     /** The request "nonce" parameter. */
     nonce?: string;
@@ -465,9 +455,9 @@ declare interface NavigateParams {
 }
 
 /**
- * @internal
+ * @public
  */
-declare interface NavigateResponse {
+export declare interface NavigateResponse {
     url: string;
 }
 
@@ -505,18 +495,21 @@ export declare class OidcClient {
     readonly settings: OidcClientSettingsStore;
     protected readonly _logger: Logger;
     readonly metadataService: MetadataService;
+    protected readonly _claimsService: ClaimsService;
     protected readonly _validator: ResponseValidator;
     protected readonly _tokenClient: TokenClient;
     protected readonly _deviceAuthorizationClient: DeviceAuthorizationClient;
     constructor(settings: OidcClientSettings);
-    createSigninRequest({ state, request, request_uri, request_type, id_token_hint, login_hint, skipUserInfo, nonce, response_type, scope, redirect_uri, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, extraQueryParams, extraTokenParams, }: CreateSigninRequestArgs): Promise<SigninRequest>;
+    constructor(settings: OidcClientSettingsStore, metadataService: MetadataService);
+    createSigninRequest({ state, request, request_uri, request_type, id_token_hint, login_hint, skipUserInfo, nonce, url_state, response_type, scope, redirect_uri, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, extraQueryParams, extraTokenParams, }: CreateSigninRequestArgs): Promise<SigninRequest>;
     readSigninResponseState(url: string, removeState?: boolean): Promise<{
         state: SigninState;
         response: SigninResponse;
     }>;
     processSigninResponse(url: string): Promise<SigninResponse>;
-    useRefreshToken({ state, timeoutInSeconds, }: UseRefreshTokenArgs): Promise<SigninResponse>;
-    createSignoutRequest({ state, id_token_hint, request_type, post_logout_redirect_uri, extraQueryParams, }?: CreateSignoutRequestArgs): Promise<SignoutRequest>;
+    processResourceOwnerPasswordCredentials({ username, password, skipUserInfo, extraTokenParams, }: ProcessResourceOwnerPasswordCredentialsArgs): Promise<SigninResponse>;
+    useRefreshToken({ state, redirect_uri, resource, timeoutInSeconds, extraTokenParams, }: UseRefreshTokenArgs): Promise<SigninResponse>;
+    createSignoutRequest({ state, id_token_hint, client_id, request_type, post_logout_redirect_uri, extraQueryParams, }?: CreateSignoutRequestArgs): Promise<SignoutRequest>;
     readSignoutResponseState(url: string, removeState?: boolean): Promise<{
         state: State | undefined;
         response: SignoutResponse;
@@ -573,24 +566,35 @@ export declare interface OidcClientSettings {
     /** optional protocol param */
     acr_values?: string;
     /** optional protocol param */
-    resource?: string;
-    /** optional protocol param (default: "query") */
+    resource?: string | string[];
+    /**
+     * Optional protocol param
+     * The response mode used by the authority server is defined by the response_type unless explicitly specified:
+     * - Response mode for the OAuth 2.0 response type "code" is the "query" encoding
+     * - Response mode for the OAuth 2.0 response type "token" is the "fragment" encoding
+     *
+     * @see https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
+     */
     response_mode?: "query" | "fragment";
-    /** Should OIDC protocol claims be removed from profile (default: true) */
-    filterProtocolClaims?: boolean;
+    /**
+     * Should optional OIDC protocol claims be removed from profile or specify the ones to be removed (default: true)
+     * When true, the following claims are removed by default: ["nbf", "jti", "auth_time", "nonce", "acr", "amr", "azp", "at_hash"]
+     * When specifying claims, the following claims are not allowed: ["sub", "iss", "aud", "exp", "iat"]
+     */
+    filterProtocolClaims?: boolean | string[];
     /** Flag to control if additional identity data is loaded from the user info endpoint in order to populate the user's profile (default: false) */
     loadUserInfo?: boolean;
-    /** Number (in seconds) indicating the age of state entries in storage for authorize requests that are considered abandoned and thus can be cleaned up (default: 300) */
+    /** Number (in seconds) indicating the age of state entries in storage for authorize requests that are considered abandoned and thus can be cleaned up (default: 900) */
     staleStateAgeInSeconds?: number;
-    /** @deprecated Unused */
-    clockSkewInSeconds?: number;
-    /** @deprecated Unused */
-    userInfoJwtIssuer?: "ANY" | "OP" | string;
     /**
-     * Indicates if objects returned from the user info endpoint as claims (e.g. `address`) are merged into the claims from the id token as a single object.
-     * Otherwise, they are added to an array as distinct objects for the claim type. (default: false)
+     * Indicates how objects returned from the user info endpoint as claims (e.g. `address`) are merged into the claims from the
+     * id token as a single object.  (default: `{ array: "replace" }`)
+     * - array: "replace": natives (string, int, float) and arrays are replaced, objects are merged as distinct objects
+     * - array: "merge": natives (string, int, float) are replaced, arrays and objects are merged as distinct objects
      */
-    mergeClaims?: boolean;
+    mergeClaimsStrategy?: {
+        array: "replace" | "merge";
+    };
     /**
      * Storage object used to persist interaction state (default: window.localStorage, InMemoryWebStorage iff no window).
      * E.g. `stateStore: new WebStorageStateStore({ store: window.localStorage })`
@@ -602,13 +606,34 @@ export declare interface OidcClientSettings {
      */
     extraQueryParams?: Record<string, string | number | boolean>;
     extraTokenParams?: Record<string, unknown>;
+    /**
+     * An object containing additional header to be including in request.
+     */
+    extraHeaders?: Record<string, ExtraHeader>;
+    /**
+     * Will check the content type header of the response of the revocation endpoint to match these passed values (default: [])
+     */
+    revokeTokenAdditionalContentTypes?: string[];
+    /**
+     * Will disable PKCE validation, changing to true will not append to sign in request code_challenge and code_challenge_method. (default: false)
+     */
+    disablePKCE?: boolean;
+    /**
+     * Sets the credentials for fetch requests. (default: "same-origin")
+     * Use this if you need to send cookies to the OIDC/OAuth2 provider or if you are using a proxy that requires cookies
+     */
+    fetchRequestCredentials?: RequestCredentials;
+    /**
+     * Only scopes in this list will be passed in the token refresh request.
+     */
+    refreshTokenAllowedScope?: string | undefined;
 }
 
 /**
  * The settings with defaults applied of the {@link OidcClient}.
- * @see {@link OidcClientSettings}
  *
  * @public
+ * @see {@link OidcClientSettings}
  */
 export declare class OidcClientSettingsStore {
     readonly authority: string;
@@ -628,53 +653,162 @@ export declare class OidcClientSettingsStore {
     readonly max_age: number | undefined;
     readonly ui_locales: string | undefined;
     readonly acr_values: string | undefined;
-    readonly resource: string | undefined;
-    readonly response_mode: "query" | "fragment";
-    readonly filterProtocolClaims: boolean;
+    readonly resource: string | string[] | undefined;
+    readonly response_mode: "query" | "fragment" | undefined;
+    readonly filterProtocolClaims: boolean | string[];
     readonly loadUserInfo: boolean;
     readonly staleStateAgeInSeconds: number;
-    readonly clockSkewInSeconds: number;
-    readonly userInfoJwtIssuer: "ANY" | "OP" | string;
-    readonly mergeClaims: boolean;
+    readonly mergeClaimsStrategy: {
+        array: "replace" | "merge";
+    };
     readonly stateStore: StateStore;
     readonly extraQueryParams: Record<string, string | number | boolean>;
     readonly extraTokenParams: Record<string, unknown>;
-    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, clockSkewInSeconds, userInfoJwtIssuer, mergeClaims, stateStore, extraQueryParams, extraTokenParams, }: OidcClientSettings);
+    readonly extraHeaders: Record<string, ExtraHeader>;
+    readonly revokeTokenAdditionalContentTypes?: string[];
+    readonly fetchRequestCredentials: RequestCredentials;
+    readonly refreshTokenAllowedScope: string | undefined;
+    readonly disablePKCE: boolean;
+    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, mergeClaimsStrategy, disablePKCE, stateStore, revokeTokenAdditionalContentTypes, fetchRequestCredentials, refreshTokenAllowedScope, extraQueryParams, extraTokenParams, extraHeaders, }: OidcClientSettings);
 }
 
 /**
  * @public
  */
 export declare interface OidcMetadata {
+    /**
+     * REQUIRED. URL using the https scheme with no query or fragment component that the OP asserts as its Issuer Identifier. If Issuer discovery is supported (see Section 2), this value MUST be identical to the issuer value returned by WebFinger. This also MUST be identical to the iss Claim value in ID Tokens issued from this Issuer.
+     */
     issuer: string;
+    /**
+     * REQUIRED. URL of the OP's OAuth 2.0 Authorization Endpoint [OpenID.Core].
+     */
     authorization_endpoint: string;
+    /**
+     * URL of the OP's OAuth 2.0 Token Endpoint [OpenID.Core]. This is REQUIRED unless only the Implicit Flow is used.
+     */
     token_endpoint: string;
+    /**
+     * OPTIONAL. JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0 [OpenID.Core]. Other authentication methods MAY be defined by extensions. If omitted, the default is client_secret_basic -- the HTTP Basic Authentication Scheme specified in Section 2.3.1 of OAuth 2.0 [RFC6749].
+     */
     token_endpoint_auth_methods_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the JWS signing algorithms (alg values) supported by the Token Endpoint for the signature on the JWT [JWT] used to authenticate the Client at the Token Endpoint for the private_key_jwt and client_secret_jwt authentication methods. Servers SHOULD support RS256. The value none MUST NOT be used.
+     */
     token_endpoint_auth_signing_alg_values_supported: string[];
+    /**
+     * RECOMMENDED. URL of the OP's UserInfo Endpoint [OpenID.Core]. This URL MUST use the https scheme and MAY contain port, path, and query parameter components.
+     */
     userinfo_endpoint: string;
+    /**
+     * REQUIRED. URL of an OP iframe that supports cross-origin communications for session state information with the RP Client, using the HTML5 postMessage API. This URL MUST use the https scheme and MAY contain port, path, and query parameter components. The page is loaded from an invisible iframe embedded in an RP page so that it can run in the OP's security context. It accepts postMessage requests from the relevant RP iframe and uses postMessage to post back the login status of the End-User at the OP.
+     */
     check_session_iframe: string;
+    /**
+     * REQUIRED. URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP.
+     */
     end_session_endpoint: string;
+    /**
+     * REQUIRED. URL of the OP's JSON Web Key Set [JWK] document. This contains the signing key(s) the RP uses to validate signatures from the OP. The JWK Set MAY also contain the Server's encryption key(s), which are used by RPs to encrypt requests to the Server. When both signing and encryption keys are made available, a use (Key Use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key's intended usage. Although some algorithms allow the same key to be used for both signatures and encryption, doing so is NOT RECOMMENDED, as it is less secure. The JWK x5c parameter MAY be used to provide X.509 representations of keys provided. When used, the bare key values MUST still be present and MUST match those in the certificate.
+     */
     jwks_uri: string;
+    /**
+     * RECOMMENDED. URL of the OP's Dynamic Client Registration Endpoint [https://openid.net/specs/openid-connect-discovery-1_0.html#OpenID.Registration].
+     */
     registration_endpoint: string;
+    /**
+     * RECOMMENDED. JSON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports. The server MUST support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used, although those defined in [OpenID.Core] SHOULD be listed, if supported.
+     */
     scopes_supported: string[];
+    /**
+     * REQUIRED. JSON array containing a list of the OAuth 2.0 response_type values that this OP supports. Dynamic OpenID Providers MUST support the code, id_token, and the token id_token Response Type values.
+     */
     response_types_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the Authentication Context Class References that this OP supports.
+     */
     acr_values_supported: string[];
+    /**
+     * REQUIRED. JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include pairwise and public.
+     */
     subject_types_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for Request Objects, which are described in Section 6.1 of OpenID Connect Core 1.0 [OpenID.Core]. These algorithms are used both when the Request Object is passed by value (using the request parameter) and when it is passed by reference (using the request_uri parameter). Servers SHOULD support none and RS256.
+     */
     request_object_signing_alg_values_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the display parameter values that the OpenID Provider supports. These values are described in Section 3.1.2.1 of OpenID Connect Core 1.0 [https://openid.net/specs/openid-connect-discovery-1_0.html#OpenID.Core].
+     */
     display_values_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the Claim Types that the OpenID Provider supports. These Claim Types are described in Section 5.6 of OpenID Connect Core 1.0 [https://openid.net/specs/openid-connect-discovery-1_0.html#OpenID.Core].
+     * Values defined by this specification are normal, aggregated, and distributed. If omitted, the implementation supports only normal Claims.
+     */
     claim_types_supported: string[];
+    /**
+     * RECOMMENDED. JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply values for. Note that for privacy or other reasons, this might not be an exhaustive list.
+     */
     claims_supported: string[];
+    /**
+     * OPTIONAL. Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support. If omitted, the default value is false.
+     */
     claims_parameter_supported: boolean;
+    /**
+     * OPTIONAL. URL of a page containing human-readable information that developers might want or need to know when using the OpenID Provider. In particular, if the OpenID Provider does not support Dynamic Client Registration, then information on how to register Clients needs to be provided in this documentation.
+     */
     service_documentation: string;
+    /**
+     * OPTIONAL. Languages and scripts supported for the user interface, represented as a JSON array of BCP47 [RFC5646 : https://openid.net/specs/openid-connect-discovery-1_0.html#RFC5646] language tag values.
+     */
     ui_locales_supported: string[];
+    /**
+     * The fully qualified URL of the server's revocation endpoint defined by OAuth 2.0 Token Revocation [RFC7009 : https://openid.net/specs/openid-heart-oauth2-2015-12-07.html#RFC7009]
+     * https://openid.net/specs/openid-heart-oauth2-2015-12-07.html
+     */
     revocation_endpoint: string;
+    /**
+     * The fully qualified URL of the server's introspection endpoint defined by OAuth Token Introspection [RFC7662 : https://openid.net/specs/openid-heart-oauth2-2015-12-07.html#RFC7662]
+     * https://openid.net/specs/openid-heart-oauth2-2015-12-07.html
+     */
     introspection_endpoint: string;
+    /**
+     * OPTIONAL. Boolean value specifying whether the OP supports HTTP-based logout, with true indicating support. If omitted, the default value is false.
+     * https://openid.net/specs/openid-connect-frontchannel-1_0.html
+     */
     frontchannel_logout_supported: boolean;
+    /**
+     * OPTIONAL. Boolean value specifying whether the OP can pass iss (issuer) and sid (session ID) query parameters to identify the RP session with the OP when the frontchannel_logout_uri is used. If supported, the sid Claim is also included in ID Tokens issued by the OP. If omitted, the default value is false.
+     * https://openid.net/specs/openid-connect-frontchannel-1_0.html
+     */
     frontchannel_logout_session_supported: boolean;
+    /**
+     * OPTIONAL. Boolean value specifying whether the OP supports back-channel logout, with true indicating support. If omitted, the default value is false.
+     * https://openid.net/specs/openid-connect-backchannel-1_0.html#toc
+     */
     backchannel_logout_supported: boolean;
+    /**
+     * OPTIONAL. Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP. If omitted, the default value is false.
+     * https://openid.net/specs/openid-connect-backchannel-1_0.html#toc
+     */
     backchannel_logout_session_supported: boolean;
+    /**
+     * OPTIONAL. JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports. Dynamic OpenID Providers MUST support the authorization_code and implicit Grant Type values and MAY support other Grant Types. If omitted, the default value is ["authorization_code", "implicit"].
+     */
     grant_types_supported: string[];
+    /**
+     * OPTIONAL. JSON array containing a list of the OAuth 2.0 response_mode values that this OP supports, as specified in OAuth 2.0 Multiple Response Type Encoding Practices [OAuth.Responses]. If omitted, the default for Dynamic OpenID Providers is ["query", "fragment"].
+     */
     response_modes_supported: string[];
+    /**
+     * Exchange (PKCE) [RFC7636] code challenge methods supported by this
+     *       authorization server.  Code challenge method values are used in
+     *       the "code_challenge_method" parameter defined in Section 4.3 of
+     *       [RFC7636].  The valid code challenge method values are those
+     *       registered in the IANA "PKCE Code Challenge Methods" registry
+     *       [IANA.OAuth.Parameters].  If omitted, the authorization server
+     *       does not support PKCE.
+     * https://www.rfc-editor.org/rfc/rfc8414.html
+     */
     code_challenge_methods_supported: string[];
     device_authorization_endpoint: string;
 }
@@ -730,32 +864,9 @@ export declare interface OidcStandardClaims {
 }
 
 /**
- * @internal
- */
-declare class PopupNavigator implements INavigator {
-    private _settings;
-    private readonly _logger;
-    constructor(_settings: UserManagerSettingsStore);
-    prepare({ popupWindowFeatures, popupWindowTarget, }: PopupWindowParams): Promise<PopupWindow>;
-    callback(url: string, keepOpen?: boolean): Promise<void>;
-}
-
-/**
- * @internal
- */
-declare class PopupWindow extends AbstractChildWindow {
-    protected readonly _logger: Logger;
-    protected _window: WindowProxy | null;
-    constructor({ popupWindowTarget, popupWindowFeatures, }: PopupWindowParams);
-    navigate(params: NavigateParams): Promise<NavigateResponse>;
-    close(): void;
-    static notifyOpener(url: string, keepOpen: boolean): void;
-}
-
-/**
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Window/open#window_features
  *
  * @public
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Window/open#window_features
  */
 export declare interface PopupWindowFeatures {
     left?: number;
@@ -768,6 +879,8 @@ export declare interface PopupWindowFeatures {
     status?: boolean | string;
     resizable?: boolean | string;
     scrollbars?: boolean | string;
+    /** Close popup window after time in seconds, by default it is -1. To enable this feature set value greater than 0 */
+    closePopupWindowAfterInSeconds?: number;
     [k: string]: boolean | string | number | undefined;
 }
 
@@ -782,17 +895,17 @@ export declare interface PopupWindowParams {
 /**
  * @public
  */
-export declare type QuerySessionStatusArgs = IFrameWindowParams & ExtraSigninRequestArgs;
+export declare type ProcessResourceOwnerPasswordCredentialsArgs = {
+    username: string;
+    password: string;
+    skipUserInfo?: boolean;
+    extraTokenParams?: Record<string, unknown>;
+};
 
 /**
- * @internal
+ * @public
  */
-declare class RedirectNavigator implements INavigator {
-    private _settings;
-    private readonly _logger;
-    constructor(_settings: UserManagerSettingsStore);
-    prepare({ redirectMethod, redirectTarget, }: RedirectParams): Promise<IWindow>;
-}
+export declare type QuerySessionStatusArgs = IFrameWindowParams & ExtraSigninRequestArgs;
 
 /**
  * @public
@@ -805,20 +918,22 @@ export declare interface RedirectParams {
 /**
  * Fake state store implementation necessary for validating refresh token requests.
  *
- * @internal
+ * @public
  */
-declare class RefreshState {
+export declare class RefreshState {
     /** custom "state", which can be used by a caller to have "data" round tripped */
-    readonly data: unknown | undefined;
+    readonly data?: unknown;
     readonly refresh_token: string;
     readonly id_token?: string;
     readonly session_state: string | null;
     readonly scope?: string;
+    readonly profile: UserProfile;
     constructor(args: {
         refresh_token: string;
         id_token?: string;
         session_state: string | null;
         scope?: string;
+        profile: UserProfile;
         state?: unknown;
     });
 }
@@ -829,19 +944,19 @@ declare class RefreshState {
 declare class ResponseValidator {
     protected readonly _settings: OidcClientSettingsStore;
     protected readonly _metadataService: MetadataService;
+    protected readonly _claimsService: ClaimsService;
     protected readonly _logger: Logger;
     protected readonly _userInfoService: UserInfoService;
     protected readonly _tokenClient: TokenClient;
-    constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService);
+    constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService, _claimsService: ClaimsService);
     validateSigninResponse(response: SigninResponse, state: SigninState): Promise<void>;
+    validateCredentialsResponse(response: SigninResponse, skipUserInfo: boolean): Promise<void>;
     validateRefreshResponse(response: SigninResponse, state: RefreshState): Promise<void>;
     validateSignoutResponse(response: SignoutResponse, state: State): void;
     protected _processSigninState(response: SigninResponse, state: SigninState): void;
     protected _processClaims(response: SigninResponse, skipUserInfo?: boolean, validateSub?: boolean): Promise<void>;
-    protected _mergeClaims(claims1: UserProfile, claims2: JwtClaims): UserProfile;
-    protected _filterProtocolClaims(claims: UserProfile): UserProfile;
     protected _processCode(response: SigninResponse, state: SigninState): Promise<void>;
-    protected _validateIdTokenAttributes(response: SigninResponse, currentToken?: string): void;
+    protected _validateIdTokenAttributes(response: SigninResponse, existingToken?: string): void;
 }
 
 /**
@@ -864,7 +979,6 @@ export declare class SessionMonitor {
     private readonly _userManager;
     private readonly _logger;
     private _sub;
-    private _sid;
     private _checkSessionIFrame?;
     constructor(_userManager: UserManager);
     protected _init(): Promise<void>;
@@ -872,7 +986,6 @@ export declare class SessionMonitor {
         session_state: string;
         profile: {
             sub: string;
-            sid: string;
         } | null;
     }) => Promise<void>;
     protected _stop: () => void;
@@ -887,8 +1000,6 @@ export declare interface SessionStatus {
     session_state: string;
     /** Subject identifier */
     sub?: string;
-    /** Session ID */
-    sid?: string;
 }
 
 /**
@@ -910,45 +1021,56 @@ export declare type SigninRedirectArgs = RedirectParams & ExtraSigninRequestArgs
  * @public
  */
 export declare class SigninRequest {
-    private readonly _logger;
+    private static readonly _logger;
     readonly url: string;
     readonly state: SigninState;
-    constructor({ url, authority, client_id, redirect_uri, response_type, scope, state_data, response_mode, request_type, client_secret, nonce, skipUserInfo, extraQueryParams, extraTokenParams, ...optionalParams }: SigninRequestArgs);
+    private constructor();
+    static create({ url, authority, client_id, redirect_uri, response_type, scope, state_data, response_mode, request_type, client_secret, nonce, url_state, resource, skipUserInfo, extraQueryParams, extraTokenParams, disablePKCE, ...optionalParams }: SigninRequestCreateArgs): Promise<SigninRequest>;
 }
 
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
  */
-export declare interface SigninRequestArgs {
+export declare interface SigninRequestCreateArgs {
     url: string;
     authority: string;
     client_id: string;
     redirect_uri: string;
     response_type: string;
     scope: string;
-    prompt?: string;
+    response_mode?: "query" | "fragment";
+    nonce?: string;
     display?: string;
+    prompt?: string;
     max_age?: number;
     ui_locales?: string;
     id_token_hint?: string;
     login_hint?: string;
     acr_values?: string;
-    resource?: string;
-    response_mode?: "query" | "fragment";
+    resource?: string | string[];
     request?: string;
     request_uri?: string;
-    extraQueryParams?: Record<string, string | number | boolean>;
     request_type?: string;
-    client_secret?: string;
+    extraQueryParams?: Record<string, string | number | boolean>;
     extraTokenParams?: Record<string, unknown>;
+    client_secret?: string;
     skipUserInfo?: boolean;
-    nonce?: string;
+    disablePKCE?: boolean;
     /** custom "state", which can be used by a caller to have "data" round tripped */
     state_data?: unknown;
+    url_state?: string;
 }
 
 /**
  * @public
+ */
+export declare type SigninResourceOwnerCredentialsArgs = ProcessResourceOwnerPasswordCredentialsArgs;
+
+/**
+ * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthResponse
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class SigninResponse {
     readonly state: string | null;
@@ -975,6 +1097,7 @@ export declare class SigninResponse {
     expires_at?: number;
     /** custom state data set during the initial signin request */
     userState: unknown;
+    url_state?: string;
     /** @see {@link User.profile} */
     profile: UserProfile;
     constructor(params: URLSearchParams);
@@ -1011,24 +1134,35 @@ export declare class SigninState extends State {
     /** @see {@link OidcClientSettings.response_mode} */
     readonly response_mode: "query" | "fragment" | undefined;
     readonly skipUserInfo: boolean | undefined;
-    constructor(args: {
-        id?: string;
-        data?: unknown;
-        created?: number;
-        request_type?: string;
-        code_verifier?: string | boolean;
-        authority: string;
-        client_id: string;
-        redirect_uri: string;
-        scope: string;
-        client_secret?: string;
-        extraTokenParams?: Record<string, unknown>;
-        response_mode?: "query" | "fragment";
-        skipUserInfo?: boolean;
-    });
+    private constructor();
+    static create(args: SigninStateCreateArgs): Promise<SigninState>;
     toStorageString(): string;
-    static fromStorageString(storageString: string): SigninState;
+    static fromStorageString(storageString: string): Promise<SigninState>;
 }
+
+/** @public */
+export declare interface SigninStateArgs {
+    id?: string;
+    data?: unknown;
+    created?: number;
+    request_type?: string;
+    code_verifier?: string;
+    code_challenge?: string;
+    authority: string;
+    client_id: string;
+    redirect_uri: string;
+    scope: string;
+    client_secret?: string;
+    extraTokenParams?: Record<string, unknown>;
+    response_mode?: "query" | "fragment";
+    skipUserInfo?: boolean;
+    url_state?: string;
+}
+
+/** @public */
+export declare type SigninStateCreateArgs = Omit<SigninStateArgs, "code_verifier"> & {
+    code_verifier?: string | boolean;
+};
 
 /**
  * @public
@@ -1047,23 +1181,27 @@ export declare class SignoutRequest {
     private readonly _logger;
     readonly url: string;
     readonly state?: State;
-    constructor({ url, state_data, id_token_hint, post_logout_redirect_uri, extraQueryParams, request_type, }: SignoutRequestArgs);
+    constructor({ url, state_data, id_token_hint, post_logout_redirect_uri, extraQueryParams, request_type, client_id, }: SignoutRequestArgs);
 }
 
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-rpinitiated-1_0.html#RPLogout
  */
 export declare interface SignoutRequestArgs {
     url: string;
-    state_data?: unknown;
     id_token_hint?: string;
+    client_id?: string;
     post_logout_redirect_uri?: string;
     extraQueryParams?: Record<string, string | number | boolean>;
     request_type?: string;
+    /** custom "state", which can be used by a caller to have "data" round tripped */
+    state_data?: unknown;
 }
 
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class SignoutResponse {
     readonly state: string | null;
@@ -1077,6 +1215,11 @@ export declare class SignoutResponse {
     userState: unknown;
     constructor(params: URLSearchParams);
 }
+
+/**
+ * @public
+ */
+export declare type SignoutSilentArgs = IFrameWindowParams & ExtraSignoutRequestArgs;
 
 /**
  * @public
@@ -1104,16 +1247,18 @@ export declare class State {
     readonly id: string;
     readonly created: number;
     readonly request_type: string | undefined;
+    readonly url_state: string | undefined;
     /** custom "state", which can be used by a caller to have "data" round tripped */
-    readonly data: unknown | undefined;
+    readonly data?: unknown;
     constructor(args: {
         id?: string;
         data?: unknown;
         created?: number;
         request_type?: string;
+        url_state?: string;
     });
     toStorageString(): string;
-    static fromStorageString(storageString: string): State;
+    static fromStorageString(storageString: string): Promise<State>;
     static clearStaleState(storage: StateStore, age: number): Promise<void>;
 }
 
@@ -1136,7 +1281,23 @@ declare class TokenClient {
     private readonly _logger;
     private readonly _jsonService;
     constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService);
+    /**
+     * Exchange code.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3
+     */
     exchangeCode({ grant_type, redirect_uri, client_id, client_secret, ...args }: ExchangeCodeArgs): Promise<Record<string, unknown>>;
+    /**
+     * Exchange credentials.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc6749#section-4.3.2
+     */
+    exchangeCredentials({ grant_type, client_id, client_secret, scope, ...args }: ExchangeCredentialsArgs): Promise<Record<string, unknown>>;
+    /**
+     * Exchange a refresh token.
+     *
+     * @see https://www.rfc-editor.org/rfc/rfc6749#section-6
+     */
     exchangeRefreshToken({ grant_type, client_id, client_secret, timeoutInSeconds, ...args }: ExchangeRefreshTokenArgs): Promise<Record<string, unknown>>;
     /**
      * Revoke an access or refresh token.
@@ -1179,6 +1340,7 @@ export declare class User {
     expires_at?: number;
     /** custom state data set during the initial signin request */
     readonly state: unknown;
+    readonly url_state?: string;
     constructor(args: {
         id_token?: string;
         session_state?: string | null;
@@ -1189,6 +1351,7 @@ export declare class User {
         profile: UserProfile;
         expires_at?: number;
         userState?: unknown;
+        url_state?: string;
     });
     /** Computed number of seconds the access token has remaining. */
     get expires_in(): number | undefined;
@@ -1205,18 +1368,22 @@ export declare class User {
  * @public
  */
 export declare interface UseRefreshTokenArgs {
-    state: RefreshState;
+    redirect_uri?: string;
+    resource?: string | string[];
+    extraTokenParams?: Record<string, unknown>;
     timeoutInSeconds?: number;
+    state: RefreshState;
 }
 
 /**
  * @internal
  */
 declare class UserInfoService {
+    private readonly _settings;
     private readonly _metadataService;
     protected readonly _logger: Logger;
     private readonly _jsonService;
-    constructor(_metadataService: MetadataService);
+    constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService);
     getClaims(token: string): Promise<JwtClaims>;
     protected _getClaimsFromJwt: (responseText: string) => Promise<JwtClaims>;
 }
@@ -1227,330 +1394,423 @@ declare class UserInfoService {
 export declare type UserLoadedCallback = (user: User) => Promise<void> | void;
 
 /**
- * Provides a higher level API for signing a user in, signing out, managing the user's claims returned from the OIDC provider,
- * and managing an access token returned from the OIDC/OAuth2 provider.
+ * Provides a higher level API for signing a user in, signing out, managing the user's claims returned from the identity provider,
+ * and managing an access token returned from the identity provider (OAuth2/OIDC).
  *
  * @public
  */
 export declare class UserManager {
-    /** Returns the settings used to configure the `UserManager`. */
+    /** Get the settings used to configure the `UserManager`. */
     readonly settings: UserManagerSettingsStore;
     protected readonly _logger: Logger;
     protected readonly _client: OidcClient;
-    protected readonly _redirectNavigator: RedirectNavigator;
-    protected readonly _popupNavigator: PopupNavigator;
-    protected readonly _iframeNavigator: IFrameNavigator;
+    protected readonly _redirectNavigator: INavigator;
+    protected readonly _popupNavigator: INavigator;
+    protected readonly _iframeNavigator: INavigator;
     protected readonly _events: UserManagerEvents;
     protected readonly _silentRenewService: SilentRenewService;
     protected readonly _sessionMonitor: SessionMonitor | null;
-    constructor(settings: UserManagerSettings);
-    /** Returns an object used to register for events raised by the `UserManager`. */
+    constructor(settings: UserManagerSettings, redirectNavigator?: INavigator, popupNavigator?: INavigator, iframeNavigator?: INavigator);
+    /**
+     * Get object used to register for events raised by the `UserManager`.
+     */
     get events(): UserManagerEvents;
-    /** Returns an object used to access the metadata configuration of the OIDC provider. */
+    /**
+     * Get object used to access the metadata configuration of the identity provider.
+     */
     get metadataService(): MetadataService;
     /**
-     * Returns promise to load the `User` object for the currently authenticated user.
+     * Load the `User` object for the currently authenticated user.
+     *
+     * @returns A promise
      */
     getUser(): Promise<User | null>;
     /**
-     * Returns promise to remove from any storage the currently authenticated user.
+     * Remove from any storage the currently authenticated user.
+     *
+     * @returns A promise
      */
     removeUser(): Promise<void>;
     /**
-     * Returns promise to trigger a redirect of the current window to the authorization endpoint.
+     * Trigger a redirect of the current window to the authorization endpoint.
+     *
+     * @returns A promise
+     *
+     * @throws `Error` In cases of wrong authentication.
      */
     signinRedirect(args?: SigninRedirectArgs): Promise<void>;
     /**
-     * Returns promise to process response from the authorization endpoint. The result of the promise is the authenticated `User`.
+     * Process the response (callback) from the authorization endpoint.
+     * It is recommend to use {@link UserManager.signinCallback} instead.
+     *
+     * @returns A promise containing the authenticated `User`.
+     *
+     * @see {@link UserManager.signinCallback}
      */
     signinRedirectCallback(url?: string): Promise<User>;
     /**
-     * Returns promise to trigger a request (via a popup window) to the authorization endpoint. The result of the promise is the authenticated `User`.
-     */
-    signinPopup(args?: SigninPopupArgs): Promise<User>;
-    /**
-     * Returns promise to notify the opening window of response from the authorization endpoint.
-     */
-    signinPopupCallback(url?: string, keepOpen?: boolean): Promise<void>;
-    /**
-     * Returns promise to trigger a silent request (via an iframe) to the authorization endpoint.
-     * The result of the promise is the authenticated `User`.
-     */
-    signinSilent(args?: SigninSilentArgs): Promise<User | null>;
-    protected _useRefreshToken(state: RefreshState): Promise<User>;
-    /**
-     * Returns promise to notify the parent window of response from the authorization endpoint.
-     */
-    signinSilentCallback(url?: string): Promise<void>;
-    signinCallback(url?: string): Promise<User | void>;
-    signoutCallback(url?: string, keepOpen?: boolean): Promise<void>;
-    /**
-     * Returns promise to query OP for user's current signin status. Returns object with session_state and subject identifier.
-     */
-    querySessionStatus(args?: QuerySessionStatusArgs): Promise<SessionStatus | null>;
-    protected _signin(args: CreateSigninRequestArgs, handle: IWindow, verifySub?: string): Promise<User>;
-    protected _signinStart(args: CreateSigninRequestArgs, handle: IWindow): Promise<NavigateResponse>;
-    protected _signinEnd(url: string, verifySub?: string): Promise<User>;
-    /**
-     * Returns promise to trigger a redirect of the current window to the end session endpoint.
-     */
-    signoutRedirect(args?: SignoutRedirectArgs): Promise<void>;
-    /**
-     * Returns promise to process response from the end session endpoint.
-     */
-    signoutRedirectCallback(url?: string): Promise<SignoutResponse>;
-    /**
-     * Returns promise to trigger a redirect of a popup window window to the end session endpoint.
-     */
-    signoutPopup(args?: SignoutPopupArgs): Promise<void>;
-    /**
-     * Returns promise to process response from the end session endpoint from a popup window.
-     */
-    signoutPopupCallback(url?: string, keepOpen?: boolean): Promise<void>;
-    protected _signout(args: CreateSignoutRequestArgs, handle: IWindow): Promise<SignoutResponse>;
-    protected _signoutStart(args: CreateSignoutRequestArgs | undefined, handle: IWindow): Promise<NavigateResponse>;
-    protected _signoutEnd(url: string): Promise<SignoutResponse>;
-    revokeTokens(types?: RevokeTokensTypes): Promise<void>;
-    protected _revokeInternal(user: User | null, types?: ("access_token" | "refresh_token")[]): Promise<void>;
-    /**
-     * Enables silent renew for the `UserManager`.
-     */
-    startSilentRenew(): void;
-    /**
-     * Disables silent renew for the `UserManager`.
-     */
-    stopSilentRenew(): void;
-    protected get _userStoreKey(): string;
-    protected _loadUser(): Promise<User | null>;
-    storeUser(user: User | null): Promise<void>;
-    /**
-     * Removes stale state entries in storage for incomplete authorize requests.
-     */
-    clearStaleState(): Promise<void>;
-    startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
-}
-
-/**
- * @public
- */
-export declare class UserManagerEvents extends AccessTokenEvents {
-    protected readonly _logger: Logger;
-    private readonly _userLoaded;
-    private readonly _userUnloaded;
-    private readonly _silentRenewError;
-    private readonly _userSignedIn;
-    private readonly _userSignedOut;
-    private readonly _userSessionChanged;
-    constructor(settings: UserManagerSettingsStore);
-    load(user: User, raiseEvent?: boolean): void;
-    unload(): void;
-    /**
-     * Add callback: Raised when a user session has been established (or re-established).
-     */
-    addUserLoaded(cb: UserLoadedCallback): () => void;
-    /**
-     * Remove callback: Raised when a user session has been established (or re-established).
-     */
-    removeUserLoaded(cb: UserLoadedCallback): void;
-    /**
-     * Add callback: Raised when a user session has been terminated.
-     */
-    addUserUnloaded(cb: UserUnloadedCallback): () => void;
-    /**
-     * Remove callback: Raised when a user session has been terminated.
-     */
-    removeUserUnloaded(cb: UserUnloadedCallback): void;
-    /**
-     * Add callback: Raised when the automatic silent renew has failed.
-     */
-    addSilentRenewError(cb: SilentRenewErrorCallback): () => void;
-    /**
-     * Remove callback: Raised when the automatic silent renew has failed.
-     */
-    removeSilentRenewError(cb: SilentRenewErrorCallback): void;
-    /**
-     * @internal
-     */
-    _raiseSilentRenewError(e: Error): void;
-    /**
-     * Add callback: Raised when the user is signed in (when `monitorSession` is set).
-     * @see {@link UserManagerSettings.monitorSession}
-     */
-    addUserSignedIn(cb: UserSignedInCallback): () => void;
-    /**
-     * Remove callback: Raised when the user is signed in (when `monitorSession` is set).
-     */
-    removeUserSignedIn(cb: UserSignedInCallback): void;
-    /**
-     * @internal
-     */
-    _raiseUserSignedIn(): void;
-    /**
-     * Add callback: Raised when the user's sign-in status at the OP has changed (when `monitorSession` is set).
-     * @see {@link UserManagerSettings.monitorSession}
-     */
-    addUserSignedOut(cb: UserSignedOutCallback): () => void;
-    /**
-     * Remove callback: Raised when the user's sign-in status at the OP has changed (when `monitorSession` is set).
-     */
-    removeUserSignedOut(cb: UserSignedOutCallback): void;
-    /**
-     * @internal
-     */
-    _raiseUserSignedOut(): void;
-    /**
-     * Add callback: Raised when the user session changed (when `monitorSession` is set).
-     * @see {@link UserManagerSettings.monitorSession}
-     */
-    addUserSessionChanged(cb: UserSessionChangedCallback): () => void;
-    /**
-     * Remove callback: Raised when the user session changed (when `monitorSession` is set).
-     */
-    removeUserSessionChanged(cb: UserSessionChangedCallback): void;
-    /**
-     * @internal
-     */
-    _raiseUserSessionChanged(): void;
-}
-
-/**
- * The settings used to configure the {@link UserManager}.
- *
- * @public
- */
-export declare interface UserManagerSettings extends OidcClientSettings {
-    /** The URL for the page containing the call to signinPopupCallback to handle the callback from the OIDC/OAuth2 */
-    popup_redirect_uri?: string;
-    popup_post_logout_redirect_uri?: string;
-    /**
-     * The features parameter to window.open for the popup signin window. By default, the popup is
-     * placed centered in front of the window opener.
-     * (default: \{ location: false, menubar: false, height: 640 \})
-     */
-    popupWindowFeatures?: PopupWindowFeatures;
-    /** The target parameter to window.open for the popup signin window (default: "_blank") */
-    popupWindowTarget?: string;
-    /** The methods window.location method used to redirect (default: "assign") */
-    redirectMethod?: "replace" | "assign";
-    /** The methods target window being redirected (default: "self") */
-    redirectTarget?: "top" | "self";
-    /** The target to pass while calling postMessage inside iframe for callback (default: window.location.origin) */
-    iframeNotifyParentOrigin?: string;
-    /** The script origin to check during 'message' callback execution while performing silent auth via iframe (default: window.location.origin) */
-    iframeScriptOrigin?: string;
-    /** The URL for the page containing the code handling the silent renew */
-    silent_redirect_uri?: string;
-    /** Number of seconds to wait for the silent renew to return before assuming it has failed or timed out (default: 10) */
-    silentRequestTimeoutInSeconds?: number;
-    /** Flag to indicate if there should be an automatic attempt to renew the access token prior to its expiration (default: true) */
-    automaticSilentRenew?: boolean;
-    /** Flag to validate user.profile.sub in silent renew calls (default: true) */
-    validateSubOnSilentRenew?: boolean;
-    /** Flag to control if id_token is included as id_token_hint in silent renew calls (default: false) */
-    includeIdTokenInSilentRenew?: boolean;
-    /** Will raise events for when user has performed a signout at the OP (default: false) */
-    monitorSession?: boolean;
-    monitorAnonymousSession?: boolean;
-    /** Interval in seconds to check the user's session (default: 2) */
-    checkSessionIntervalInSeconds?: number;
-    query_status_response_type?: string;
-    stopCheckSessionOnError?: boolean;
-    /**
-     * The `token_type_hint`s to pass to the authority server by default (default: ["access_token", "refresh_token"])
+     * Trigger the signin with user/password.
      *
-     * Token types will be revoked in the same order as they are given here.
-     */
-    revokeTokenTypes?: ("access_token" | "refresh_token")[];
-    /** Will invoke the revocation endpoint on signout if there is an access token for the user (default: false) */
-    revokeTokensOnSignout?: boolean;
-    /** The number of seconds before an access token is to expire to raise the accessTokenExpiring event (default: 60) */
-    accessTokenExpiringNotificationTimeInSeconds?: number;
+     * @returns A promise containing the authenticated `User`.
+     * @throws {@link ErrorResponse} In cases of wrong authentication.
+         */
+     signinResourceOwnerCredentials({ username, password, skipUserInfo, }: SigninResourceOwnerCredentialsArgs): Promise<User>;
+     /**
+      * Trigger a request (via a popup window) to the authorization endpoint.
+      *
+      * @returns A promise containing the authenticated `User`.
+      * @throws `Error` In cases of wrong authentication.
+      */
+     signinPopup(args?: SigninPopupArgs): Promise<User>;
+     /**
+      * Notify the opening window of response (callback) from the authorization endpoint.
+      * It is recommend to use {@link UserManager.signinCallback} instead.
+      *
+      * @returns A promise
+      *
+      * @see {@link UserManager.signinCallback}
+      */
+     signinPopupCallback(url?: string, keepOpen?: boolean): Promise<void>;
+     /**
+      * Trigger a silent request (via refresh token or an iframe) to the authorization endpoint.
+      *
+      * @returns A promise that contains the authenticated `User`.
+      */
+     signinSilent(args?: SigninSilentArgs): Promise<User | null>;
+     protected _useRefreshToken(args: UseRefreshTokenArgs): Promise<User>;
+     /**
+      *
+      * Notify the parent window of response (callback) from the authorization endpoint.
+      * It is recommend to use {@link UserManager.signinCallback} instead.
+      *
+      * @returns A promise
+      *
+      * @see {@link UserManager.signinCallback}
+      */
+     signinSilentCallback(url?: string): Promise<void>;
+     /**
+      * Process any response (callback) from the authorization endpoint, by dispatching the request_type
+      * and executing one of the following functions:
+      * - {@link UserManager.signinRedirectCallback}
+      * - {@link UserManager.signinPopupCallback}
+      * - {@link UserManager.signinSilentCallback}
+      *
+      * @throws `Error` If request_type is unknown or signout can not processed.
+      */
+     signinCallback(url?: string): Promise<User | void>;
+     /**
+      * Process any response (callback) from the end session endpoint, by dispatching the request_type
+      * and executing one of the following functions:
+      * - {@link UserManager.signoutRedirectCallback}
+      * - {@link UserManager.signoutPopupCallback}
+      * - {@link UserManager.signoutSilentCallback}
+      *
+      * @throws `Error` If request_type is unknown or signout can not processed.
+      */
+     signoutCallback(url?: string, keepOpen?: boolean): Promise<void>;
+     /**
+      * Query OP for user's current signin status.
+      *
+      * @returns A promise object with session_state and subject identifier.
+      */
+     querySessionStatus(args?: QuerySessionStatusArgs): Promise<SessionStatus | null>;
+     protected _signin(args: CreateSigninRequestArgs, handle: IWindow, verifySub?: string): Promise<User>;
+     protected _signinStart(args: CreateSigninRequestArgs, handle: IWindow): Promise<NavigateResponse>;
+     protected _signinEnd(url: string, verifySub?: string): Promise<User>;
+     protected _buildUser(signinResponse: SigninResponse, verifySub?: string): Promise<User>;
+     /**
+      * Trigger a redirect of the current window to the end session endpoint.
+      *
+      * @returns A promise
+      */
+     signoutRedirect(args?: SignoutRedirectArgs): Promise<void>;
+     /**
+      * Process response (callback) from the end session endpoint.
+      * It is recommend to use {@link UserManager.signoutCallback} instead.
+      *
+      * @returns A promise containing signout response
+      *
+      * @see {@link UserManager.signoutCallback}
+      */
+     signoutRedirectCallback(url?: string): Promise<SignoutResponse>;
+     /**
+      * Trigger a redirect of a popup window window to the end session endpoint.
+      *
+      * @returns A promise
+      */
+     signoutPopup(args?: SignoutPopupArgs): Promise<void>;
+     /**
+      * Process response (callback) from the end session endpoint from a popup window.
+      * It is recommend to use {@link UserManager.signoutCallback} instead.
+      *
+      * @returns A promise
+      *
+      * @see {@link UserManager.signoutCallback}
+      */
+     signoutPopupCallback(url?: string, keepOpen?: boolean): Promise<void>;
+     protected _signout(args: CreateSignoutRequestArgs, handle: IWindow): Promise<SignoutResponse>;
+     protected _signoutStart(args: CreateSignoutRequestArgs | undefined, handle: IWindow): Promise<NavigateResponse>;
+     protected _signoutEnd(url: string): Promise<SignoutResponse>;
+     /**
+      * Trigger a silent request (via an iframe) to the end session endpoint.
+      *
+      * @returns A promise
+      */
+     signoutSilent(args?: SignoutSilentArgs): Promise<void>;
+     /**
+      * Notify the parent window of response (callback) from the end session endpoint.
+      * It is recommend to use {@link UserManager.signoutCallback} instead.
+      *
+      * @returns A promise
+      *
+      * @see {@link UserManager.signoutCallback}
+      */
+     signoutSilentCallback(url?: string): Promise<void>;
+     revokeTokens(types?: RevokeTokensTypes): Promise<void>;
+     protected _revokeInternal(user: User | null, types?: ("access_token" | "refresh_token")[]): Promise<void>;
+     /**
+      * Enables silent renew for the `UserManager`.
+      */
+     startSilentRenew(): void;
+     /**
+      * Disables silent renew for the `UserManager`.
+      */
+     stopSilentRenew(): void;
+     protected get _userStoreKey(): string;
+     protected _loadUser(): Promise<User | null>;
+     storeUser(user: User | null): Promise<void>;
+     /**
+      * Removes stale state entries in storage for incomplete authorize requests.
+      */
+     clearStaleState(): Promise<void>;
+     startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
+     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    }
+
     /**
-     * Storage object used to persist User for currently authenticated user (default: window.sessionStorage, InMemoryWebStorage iff no window).
-     *  E.g. `userStore: new WebStorageStateStore({ store: window.localStorage })`
+     * @public
      */
-    userStore?: WebStorageStateStore;
-}
+    export declare class UserManagerEvents extends AccessTokenEvents {
+        protected readonly _logger: Logger;
+        private readonly _userLoaded;
+        private readonly _userUnloaded;
+        private readonly _silentRenewError;
+        private readonly _userSignedIn;
+        private readonly _userSignedOut;
+        private readonly _userSessionChanged;
+        constructor(settings: UserManagerSettingsStore);
+        load(user: User, raiseEvent?: boolean): Promise<void>;
+        unload(): Promise<void>;
+        /**
+         * Add callback: Raised when a user session has been established (or re-established).
+         */
+        addUserLoaded(cb: UserLoadedCallback): () => void;
+        /**
+         * Remove callback: Raised when a user session has been established (or re-established).
+         */
+        removeUserLoaded(cb: UserLoadedCallback): void;
+        /**
+         * Add callback: Raised when a user session has been terminated.
+         */
+        addUserUnloaded(cb: UserUnloadedCallback): () => void;
+        /**
+         * Remove callback: Raised when a user session has been terminated.
+         */
+        removeUserUnloaded(cb: UserUnloadedCallback): void;
+        /**
+         * Add callback: Raised when the automatic silent renew has failed.
+         */
+        addSilentRenewError(cb: SilentRenewErrorCallback): () => void;
+        /**
+         * Remove callback: Raised when the automatic silent renew has failed.
+         */
+        removeSilentRenewError(cb: SilentRenewErrorCallback): void;
+        /**
+         * @internal
+         */
+        _raiseSilentRenewError(e: Error): Promise<void>;
+        /**
+         * Add callback: Raised when the user is signed in (when `monitorSession` is set).
+         * @see {@link UserManagerSettings.monitorSession}
+         */
+        addUserSignedIn(cb: UserSignedInCallback): () => void;
+        /**
+         * Remove callback: Raised when the user is signed in (when `monitorSession` is set).
+         */
+        removeUserSignedIn(cb: UserSignedInCallback): void;
+        /**
+         * @internal
+         */
+        _raiseUserSignedIn(): Promise<void>;
+        /**
+         * Add callback: Raised when the user's sign-in status at the OP has changed (when `monitorSession` is set).
+         * @see {@link UserManagerSettings.monitorSession}
+         */
+        addUserSignedOut(cb: UserSignedOutCallback): () => void;
+        /**
+         * Remove callback: Raised when the user's sign-in status at the OP has changed (when `monitorSession` is set).
+         */
+        removeUserSignedOut(cb: UserSignedOutCallback): void;
+        /**
+         * @internal
+         */
+        _raiseUserSignedOut(): Promise<void>;
+        /**
+         * Add callback: Raised when the user session changed (when `monitorSession` is set).
+         * @see {@link UserManagerSettings.monitorSession}
+         */
+        addUserSessionChanged(cb: UserSessionChangedCallback): () => void;
+        /**
+         * Remove callback: Raised when the user session changed (when `monitorSession` is set).
+         */
+        removeUserSessionChanged(cb: UserSessionChangedCallback): void;
+        /**
+         * @internal
+         */
+        _raiseUserSessionChanged(): Promise<void>;
+    }
 
-/**
- * The settings with defaults applied of the {@link UserManager}.
- * @see {@link UserManagerSettings}
- *
- * @public
- */
-export declare class UserManagerSettingsStore extends OidcClientSettingsStore {
-    readonly popup_redirect_uri: string;
-    readonly popup_post_logout_redirect_uri: string | undefined;
-    readonly popupWindowFeatures: PopupWindowFeatures;
-    readonly popupWindowTarget: string;
-    readonly redirectMethod: "replace" | "assign";
-    readonly redirectTarget: "top" | "self";
-    readonly iframeNotifyParentOrigin: string | undefined;
-    readonly iframeScriptOrigin: string | undefined;
-    readonly silent_redirect_uri: string;
-    readonly silentRequestTimeoutInSeconds: number;
-    readonly automaticSilentRenew: boolean;
-    readonly validateSubOnSilentRenew: boolean;
-    readonly includeIdTokenInSilentRenew: boolean;
-    readonly monitorSession: boolean;
-    readonly monitorAnonymousSession: boolean;
-    readonly checkSessionIntervalInSeconds: number;
-    readonly query_status_response_type: string;
-    readonly stopCheckSessionOnError: boolean;
-    readonly revokeTokenTypes: ("access_token" | "refresh_token")[];
-    readonly revokeTokensOnSignout: boolean;
-    readonly accessTokenExpiringNotificationTimeInSeconds: number;
-    readonly userStore: WebStorageStateStore;
-    constructor(args: UserManagerSettings);
-}
+    /**
+     * The settings used to configure the {@link UserManager}.
+     *
+     * @public
+     */
+    export declare interface UserManagerSettings extends OidcClientSettings {
+        /** The URL for the page containing the call to signinPopupCallback to handle the callback from the OIDC/OAuth2 */
+        popup_redirect_uri?: string;
+        popup_post_logout_redirect_uri?: string;
+        /**
+         * The features parameter to window.open for the popup signin window. By default, the popup is
+         * placed centered in front of the window opener.
+         * (default: \{ location: false, menubar: false, height: 640, closePopupWindowAfterInSeconds: -1 \})
+         */
+        popupWindowFeatures?: PopupWindowFeatures;
+        /** The target parameter to window.open for the popup signin window (default: "_blank") */
+        popupWindowTarget?: string;
+        /** The methods window.location method used to redirect (default: "assign") */
+        redirectMethod?: "replace" | "assign";
+        /** The methods target window being redirected (default: "self") */
+        redirectTarget?: "top" | "self";
+        /** The target to pass while calling postMessage inside iframe for callback (default: window.location.origin) */
+        iframeNotifyParentOrigin?: string;
+        /** The script origin to check during 'message' callback execution while performing silent auth via iframe (default: window.location.origin) */
+        iframeScriptOrigin?: string;
+        /** The URL for the page containing the code handling the silent renew */
+        silent_redirect_uri?: string;
+        /** Number of seconds to wait for the silent renew to return before assuming it has failed or timed out (default: 10) */
+        silentRequestTimeoutInSeconds?: number;
+        /** Flag to indicate if there should be an automatic attempt to renew the access token prior to its expiration. The automatic renew attempt starts 1 minute before the access token expires (default: true) */
+        automaticSilentRenew?: boolean;
+        /** Flag to validate user.profile.sub in silent renew calls (default: true) */
+        validateSubOnSilentRenew?: boolean;
+        /** Flag to control if id_token is included as id_token_hint in silent renew calls (default: false) */
+        includeIdTokenInSilentRenew?: boolean;
+        /** Will raise events for when user has performed a signout at the OP (default: false) */
+        monitorSession?: boolean;
+        monitorAnonymousSession?: boolean;
+        /** Interval in seconds to check the user's session (default: 2) */
+        checkSessionIntervalInSeconds?: number;
+        query_status_response_type?: string;
+        stopCheckSessionOnError?: boolean;
+        /**
+         * The `token_type_hint`s to pass to the authority server by default (default: ["access_token", "refresh_token"])
+         *
+         * Token types will be revoked in the same order as they are given here.
+         */
+        revokeTokenTypes?: ("access_token" | "refresh_token")[];
+        /** Will invoke the revocation endpoint on signout if there is an access token for the user (default: false) */
+        revokeTokensOnSignout?: boolean;
+        /** Flag to control if id_token is included as id_token_hint in silent signout calls (default: false) */
+        includeIdTokenInSilentSignout?: boolean;
+        /** The number of seconds before an access token is to expire to raise the accessTokenExpiring event (default: 60) */
+        accessTokenExpiringNotificationTimeInSeconds?: number;
+        /**
+         * Storage object used to persist User for currently authenticated user (default: window.sessionStorage, InMemoryWebStorage iff no window).
+         *  E.g. `userStore: new WebStorageStateStore({ store: window.localStorage })`
+         */
+        userStore?: WebStorageStateStore;
+    }
 
-/**
- * Holds claims represented by a combination of the `id_token` and the user info endpoint.
- * @public
- */
-export declare type UserProfile = IdTokenClaims;
+    /**
+     * The settings with defaults applied of the {@link UserManager}.
+     * @see {@link UserManagerSettings}
+     *
+     * @public
+     */
+    export declare class UserManagerSettingsStore extends OidcClientSettingsStore {
+        readonly popup_redirect_uri: string;
+        readonly popup_post_logout_redirect_uri: string | undefined;
+        readonly popupWindowFeatures: PopupWindowFeatures;
+        readonly popupWindowTarget: string;
+        readonly redirectMethod: "replace" | "assign";
+        readonly redirectTarget: "top" | "self";
+        readonly iframeNotifyParentOrigin: string | undefined;
+        readonly iframeScriptOrigin: string | undefined;
+        readonly silent_redirect_uri: string;
+        readonly silentRequestTimeoutInSeconds: number;
+        readonly automaticSilentRenew: boolean;
+        readonly validateSubOnSilentRenew: boolean;
+        readonly includeIdTokenInSilentRenew: boolean;
+        readonly monitorSession: boolean;
+        readonly monitorAnonymousSession: boolean;
+        readonly checkSessionIntervalInSeconds: number;
+        readonly query_status_response_type: string;
+        readonly stopCheckSessionOnError: boolean;
+        readonly revokeTokenTypes: ("access_token" | "refresh_token")[];
+        readonly revokeTokensOnSignout: boolean;
+        readonly includeIdTokenInSilentSignout: boolean;
+        readonly accessTokenExpiringNotificationTimeInSeconds: number;
+        readonly userStore: WebStorageStateStore;
+        constructor(args: UserManagerSettings);
+    }
 
-/**
- * @public
- */
-export declare type UserSessionChangedCallback = () => Promise<void> | void;
+    /**
+     * Holds claims represented by a combination of the `id_token` and the user info endpoint.
+     *
+     * @public
+     */
+    export declare type UserProfile = IdTokenClaims;
 
-/**
- * @public
- */
-export declare type UserSignedInCallback = () => Promise<void> | void;
+    /**
+     * @public
+     */
+    export declare type UserSessionChangedCallback = () => Promise<void> | void;
 
-/**
- * @public
- */
-export declare type UserSignedOutCallback = () => Promise<void> | void;
+    /**
+     * @public
+     */
+    export declare type UserSignedInCallback = () => Promise<void> | void;
 
-/**
- * @public
- */
-export declare type UserUnloadedCallback = () => Promise<void> | void;
+    /**
+     * @public
+     */
+    export declare type UserSignedOutCallback = () => Promise<void> | void;
 
-/**
- * @public
- */
-export declare const Version: string;
+    /**
+     * @public
+     */
+    export declare type UserUnloadedCallback = () => Promise<void> | void;
 
-/**
- * @public
- */
-export declare class WebStorageStateStore implements StateStore {
-    private readonly _logger;
-    private readonly _store;
-    private readonly _prefix;
-    constructor({ prefix, store }?: {
-        prefix?: string | undefined;
-        store?: Storage | undefined;
-    });
-    set(key: string, value: string): Promise<void>;
-    get(key: string): Promise<string | null>;
-    remove(key: string): Promise<string | null>;
-    getAllKeys(): Promise<string[]>;
-}
+    /**
+     * @public
+     */
+    export declare const Version: string;
 
-export { }
+    /**
+     * @public
+     */
+    export declare class WebStorageStateStore implements StateStore {
+        private readonly _logger;
+        private readonly _store;
+        private readonly _prefix;
+        constructor({ prefix, store, }?: {
+            prefix?: string;
+            store?: AsyncStorage | Storage;
+        });
+        set(key: string, value: string): Promise<void>;
+        get(key: string): Promise<string | null>;
+        remove(key: string): Promise<string | null>;
+        getAllKeys(): Promise<string[]>;
+    }
+
+    export { }

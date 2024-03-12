@@ -6,7 +6,5 @@ export interface SessionStatus {
     session_state: string;
     /** Subject identifier */
     sub?: string;
-    /** Session ID */
-    sid?: string;
 }
 //# sourceMappingURL=SessionStatus.d.ts.map

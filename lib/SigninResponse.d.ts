@@ -1,6 +1,8 @@
 import type { UserProfile } from "./User";
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthResponse
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class SigninResponse {
     readonly state: string | null;
@@ -27,6 +29,7 @@ export declare class SigninResponse {
     expires_at?: number;
     /** custom state data set during the initial signin request */
     userState: unknown;
+    url_state?: string;
     /** @see {@link User.profile} */
     profile: UserProfile;
     constructor(params: URLSearchParams);

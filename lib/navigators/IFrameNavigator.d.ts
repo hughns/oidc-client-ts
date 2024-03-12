@@ -1,5 +1,5 @@
 import type { UserManagerSettingsStore } from "../UserManagerSettings";
-import { IFrameWindow, IFrameWindowParams } from "./IFrameWindow";
+import { IFrameWindow, type IFrameWindowParams } from "./IFrameWindow";
 import type { INavigator } from "./INavigator";
 /**
  * @internal

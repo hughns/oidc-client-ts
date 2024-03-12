@@ -1,4 +1,4 @@
-import { OidcClientSettings, OidcClientSettingsStore } from "./OidcClientSettings";
+import { type OidcClientSettings, OidcClientSettingsStore } from "./OidcClientSettings";
 import type { PopupWindowFeatures } from "./utils/PopupUtils";
 import { WebStorageStateStore } from "./WebStorageStateStore";
 export declare const DefaultPopupWindowFeatures: PopupWindowFeatures;
@@ -16,7 +16,7 @@ export interface UserManagerSettings extends OidcClientSettings {
     /**
      * The features parameter to window.open for the popup signin window. By default, the popup is
      * placed centered in front of the window opener.
-     * (default: \{ location: false, menubar: false, height: 640 \})
+     * (default: \{ location: false, menubar: false, height: 640, closePopupWindowAfterInSeconds: -1 \})
      */
     popupWindowFeatures?: PopupWindowFeatures;
     /** The target parameter to window.open for the popup signin window (default: "_blank") */
@@ -33,7 +33,7 @@ export interface UserManagerSettings extends OidcClientSettings {
     silent_redirect_uri?: string;
     /** Number of seconds to wait for the silent renew to return before assuming it has failed or timed out (default: 10) */
     silentRequestTimeoutInSeconds?: number;
-    /** Flag to indicate if there should be an automatic attempt to renew the access token prior to its expiration (default: true) */
+    /** Flag to indicate if there should be an automatic attempt to renew the access token prior to its expiration. The automatic renew attempt starts 1 minute before the access token expires (default: true) */
     automaticSilentRenew?: boolean;
     /** Flag to validate user.profile.sub in silent renew calls (default: true) */
     validateSubOnSilentRenew?: boolean;
@@ -54,6 +54,8 @@ export interface UserManagerSettings extends OidcClientSettings {
     revokeTokenTypes?: ("access_token" | "refresh_token")[];
     /** Will invoke the revocation endpoint on signout if there is an access token for the user (default: false) */
     revokeTokensOnSignout?: boolean;
+    /** Flag to control if id_token is included as id_token_hint in silent signout calls (default: false) */
+    includeIdTokenInSilentSignout?: boolean;
     /** The number of seconds before an access token is to expire to raise the accessTokenExpiring event (default: 60) */
     accessTokenExpiringNotificationTimeInSeconds?: number;
     /**
@@ -89,6 +91,7 @@ export declare class UserManagerSettingsStore extends OidcClientSettingsStore {
     readonly stopCheckSessionOnError: boolean;
     readonly revokeTokenTypes: ("access_token" | "refresh_token")[];
     readonly revokeTokensOnSignout: boolean;
+    readonly includeIdTokenInSilentSignout: boolean;
     readonly accessTokenExpiringNotificationTimeInSeconds: number;
     readonly userStore: WebStorageStateStore;
     constructor(args: UserManagerSettings);

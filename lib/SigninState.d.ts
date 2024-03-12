@@ -1,4 +1,26 @@
 import { State } from "./State";
+/** @public */
+export interface SigninStateArgs {
+    id?: string;
+    data?: unknown;
+    created?: number;
+    request_type?: string;
+    code_verifier?: string;
+    code_challenge?: string;
+    authority: string;
+    client_id: string;
+    redirect_uri: string;
+    scope: string;
+    client_secret?: string;
+    extraTokenParams?: Record<string, unknown>;
+    response_mode?: "query" | "fragment";
+    skipUserInfo?: boolean;
+    url_state?: string;
+}
+/** @public */
+export type SigninStateCreateArgs = Omit<SigninStateArgs, "code_verifier"> & {
+    code_verifier?: string | boolean;
+};
 /**
  * @public
  */
@@ -22,22 +44,9 @@ export declare class SigninState extends State {
     /** @see {@link OidcClientSettings.response_mode} */
     readonly response_mode: "query" | "fragment" | undefined;
     readonly skipUserInfo: boolean | undefined;
-    constructor(args: {
-        id?: string;
-        data?: unknown;
-        created?: number;
-        request_type?: string;
-        code_verifier?: string | boolean;
-        authority: string;
-        client_id: string;
-        redirect_uri: string;
-        scope: string;
-        client_secret?: string;
-        extraTokenParams?: Record<string, unknown>;
-        response_mode?: "query" | "fragment";
-        skipUserInfo?: boolean;
-    });
+    private constructor();
+    static create(args: SigninStateCreateArgs): Promise<SigninState>;
     toStorageString(): string;
-    static fromStorageString(storageString: string): SigninState;
+    static fromStorageString(storageString: string): Promise<SigninState>;
 }
 //# sourceMappingURL=SigninState.d.ts.map

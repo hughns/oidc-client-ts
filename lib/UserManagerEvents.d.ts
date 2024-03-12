@@ -5,27 +5,27 @@ import type { User } from "./User";
 /**
  * @public
  */
-export declare type UserLoadedCallback = (user: User) => Promise<void> | void;
+export type UserLoadedCallback = (user: User) => Promise<void> | void;
 /**
  * @public
  */
-export declare type UserUnloadedCallback = () => Promise<void> | void;
+export type UserUnloadedCallback = () => Promise<void> | void;
 /**
  * @public
  */
-export declare type SilentRenewErrorCallback = (error: Error) => Promise<void> | void;
+export type SilentRenewErrorCallback = (error: Error) => Promise<void> | void;
 /**
  * @public
  */
-export declare type UserSignedInCallback = () => Promise<void> | void;
+export type UserSignedInCallback = () => Promise<void> | void;
 /**
  * @public
  */
-export declare type UserSignedOutCallback = () => Promise<void> | void;
+export type UserSignedOutCallback = () => Promise<void> | void;
 /**
  * @public
  */
-export declare type UserSessionChangedCallback = () => Promise<void> | void;
+export type UserSessionChangedCallback = () => Promise<void> | void;
 /**
  * @public
  */
@@ -38,8 +38,8 @@ export declare class UserManagerEvents extends AccessTokenEvents {
     private readonly _userSignedOut;
     private readonly _userSessionChanged;
     constructor(settings: UserManagerSettingsStore);
-    load(user: User, raiseEvent?: boolean): void;
-    unload(): void;
+    load(user: User, raiseEvent?: boolean): Promise<void>;
+    unload(): Promise<void>;
     /**
      * Add callback: Raised when a user session has been established (or re-established).
      */
@@ -67,7 +67,7 @@ export declare class UserManagerEvents extends AccessTokenEvents {
     /**
      * @internal
      */
-    _raiseSilentRenewError(e: Error): void;
+    _raiseSilentRenewError(e: Error): Promise<void>;
     /**
      * Add callback: Raised when the user is signed in (when `monitorSession` is set).
      * @see {@link UserManagerSettings.monitorSession}
@@ -80,7 +80,7 @@ export declare class UserManagerEvents extends AccessTokenEvents {
     /**
      * @internal
      */
-    _raiseUserSignedIn(): void;
+    _raiseUserSignedIn(): Promise<void>;
     /**
      * Add callback: Raised when the user's sign-in status at the OP has changed (when `monitorSession` is set).
      * @see {@link UserManagerSettings.monitorSession}
@@ -93,7 +93,7 @@ export declare class UserManagerEvents extends AccessTokenEvents {
     /**
      * @internal
      */
-    _raiseUserSignedOut(): void;
+    _raiseUserSignedOut(): Promise<void>;
     /**
      * Add callback: Raised when the user session changed (when `monitorSession` is set).
      * @see {@link UserManagerSettings.monitorSession}
@@ -106,6 +106,6 @@ export declare class UserManagerEvents extends AccessTokenEvents {
     /**
      * @internal
      */
-    _raiseUserSessionChanged(): void;
+    _raiseUserSessionChanged(): Promise<void>;
 }
 //# sourceMappingURL=UserManagerEvents.d.ts.map

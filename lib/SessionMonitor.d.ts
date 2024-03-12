@@ -7,7 +7,6 @@ export declare class SessionMonitor {
     private readonly _userManager;
     private readonly _logger;
     private _sub;
-    private _sid;
     private _checkSessionIFrame?;
     constructor(_userManager: UserManager);
     protected _init(): Promise<void>;
@@ -15,7 +14,6 @@ export declare class SessionMonitor {
         session_state: string;
         profile: {
             sub: string;
-            sid: string;
         } | null;
     }) => Promise<void>;
     protected _stop: () => void;

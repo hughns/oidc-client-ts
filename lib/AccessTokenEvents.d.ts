@@ -3,7 +3,7 @@ import type { User } from "./User";
 /**
  * @public
  */
-export declare type AccessTokenCallback = (...ev: unknown[]) => (Promise<void> | void);
+export type AccessTokenCallback = (...ev: unknown[]) => (Promise<void> | void);
 /**
  * @public
  */

@@ -3,7 +3,11 @@ import type { StateStore } from "./StateStore";
 /**
  * @public
  */
-export declare type SigningKey = Record<string, string | string[]>;
+export type SigningKey = Record<string, string | string[]>;
+/**
+ * @public
+ */
+export type ExtraHeader = string | (() => string);
 /**
  * The settings used to configure the {@link OidcClient}.
  *
@@ -49,24 +53,35 @@ export interface OidcClientSettings {
     /** optional protocol param */
     acr_values?: string;
     /** optional protocol param */
-    resource?: string;
-    /** optional protocol param (default: "query") */
+    resource?: string | string[];
+    /**
+     * Optional protocol param
+     * The response mode used by the authority server is defined by the response_type unless explicitly specified:
+     * - Response mode for the OAuth 2.0 response type "code" is the "query" encoding
+     * - Response mode for the OAuth 2.0 response type "token" is the "fragment" encoding
+     *
+     * @see https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#ResponseModes
+     */
     response_mode?: "query" | "fragment";
-    /** Should OIDC protocol claims be removed from profile (default: true) */
-    filterProtocolClaims?: boolean;
+    /**
+     * Should optional OIDC protocol claims be removed from profile or specify the ones to be removed (default: true)
+     * When true, the following claims are removed by default: ["nbf", "jti", "auth_time", "nonce", "acr", "amr", "azp", "at_hash"]
+     * When specifying claims, the following claims are not allowed: ["sub", "iss", "aud", "exp", "iat"]
+    */
+    filterProtocolClaims?: boolean | string[];
     /** Flag to control if additional identity data is loaded from the user info endpoint in order to populate the user's profile (default: false) */
     loadUserInfo?: boolean;
-    /** Number (in seconds) indicating the age of state entries in storage for authorize requests that are considered abandoned and thus can be cleaned up (default: 300) */
+    /** Number (in seconds) indicating the age of state entries in storage for authorize requests that are considered abandoned and thus can be cleaned up (default: 900) */
     staleStateAgeInSeconds?: number;
-    /** @deprecated Unused */
-    clockSkewInSeconds?: number;
-    /** @deprecated Unused */
-    userInfoJwtIssuer?: "ANY" | "OP" | string;
     /**
-     * Indicates if objects returned from the user info endpoint as claims (e.g. `address`) are merged into the claims from the id token as a single object.
-     * Otherwise, they are added to an array as distinct objects for the claim type. (default: false)
+     * Indicates how objects returned from the user info endpoint as claims (e.g. `address`) are merged into the claims from the
+     * id token as a single object.  (default: `{ array: "replace" }`)
+     * - array: "replace": natives (string, int, float) and arrays are replaced, objects are merged as distinct objects
+     * - array: "merge": natives (string, int, float) are replaced, arrays and objects are merged as distinct objects
      */
-    mergeClaims?: boolean;
+    mergeClaimsStrategy?: {
+        array: "replace" | "merge";
+    };
     /**
      * Storage object used to persist interaction state (default: window.localStorage, InMemoryWebStorage iff no window).
      * E.g. `stateStore: new WebStorageStateStore({ store: window.localStorage })`
@@ -78,12 +93,33 @@ export interface OidcClientSettings {
      */
     extraQueryParams?: Record<string, string | number | boolean>;
     extraTokenParams?: Record<string, unknown>;
+    /**
+     * An object containing additional header to be including in request.
+     */
+    extraHeaders?: Record<string, ExtraHeader>;
+    /**
+     * Will check the content type header of the response of the revocation endpoint to match these passed values (default: [])
+     */
+    revokeTokenAdditionalContentTypes?: string[];
+    /**
+     * Will disable PKCE validation, changing to true will not append to sign in request code_challenge and code_challenge_method. (default: false)
+     */
+    disablePKCE?: boolean;
+    /**
+     * Sets the credentials for fetch requests. (default: "same-origin")
+     * Use this if you need to send cookies to the OIDC/OAuth2 provider or if you are using a proxy that requires cookies
+     */
+    fetchRequestCredentials?: RequestCredentials;
+    /**
+     * Only scopes in this list will be passed in the token refresh request.
+     */
+    refreshTokenAllowedScope?: string | undefined;
 }
 /**
  * The settings with defaults applied of the {@link OidcClient}.
- * @see {@link OidcClientSettings}
  *
  * @public
+ * @see {@link OidcClientSettings}
  */
 export declare class OidcClientSettingsStore {
     readonly authority: string;
@@ -103,17 +139,22 @@ export declare class OidcClientSettingsStore {
     readonly max_age: number | undefined;
     readonly ui_locales: string | undefined;
     readonly acr_values: string | undefined;
-    readonly resource: string | undefined;
-    readonly response_mode: "query" | "fragment";
-    readonly filterProtocolClaims: boolean;
+    readonly resource: string | string[] | undefined;
+    readonly response_mode: "query" | "fragment" | undefined;
+    readonly filterProtocolClaims: boolean | string[];
     readonly loadUserInfo: boolean;
     readonly staleStateAgeInSeconds: number;
-    readonly clockSkewInSeconds: number;
-    readonly userInfoJwtIssuer: "ANY" | "OP" | string;
-    readonly mergeClaims: boolean;
+    readonly mergeClaimsStrategy: {
+        array: "replace" | "merge";
+    };
     readonly stateStore: StateStore;
     readonly extraQueryParams: Record<string, string | number | boolean>;
     readonly extraTokenParams: Record<string, unknown>;
-    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, clockSkewInSeconds, userInfoJwtIssuer, mergeClaims, stateStore, extraQueryParams, extraTokenParams, }: OidcClientSettings);
+    readonly extraHeaders: Record<string, ExtraHeader>;
+    readonly revokeTokenAdditionalContentTypes?: string[];
+    readonly fetchRequestCredentials: RequestCredentials;
+    readonly refreshTokenAllowedScope: string | undefined;
+    readonly disablePKCE: boolean;
+    constructor({ authority, metadataUrl, metadata, signingKeys, metadataSeed, client_id, client_secret, response_type, scope, redirect_uri, post_logout_redirect_uri, client_authentication, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, filterProtocolClaims, loadUserInfo, staleStateAgeInSeconds, mergeClaimsStrategy, disablePKCE, stateStore, revokeTokenAdditionalContentTypes, fetchRequestCredentials, refreshTokenAllowedScope, extraQueryParams, extraTokenParams, extraHeaders, }: OidcClientSettings);
 }
 //# sourceMappingURL=OidcClientSettings.d.ts.map

@@ -2,6 +2,7 @@ import type { OidcClientSettingsStore, SigningKey } from "./OidcClientSettings";
 import type { OidcMetadata } from "./OidcMetadata";
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
  */
 export declare class MetadataService {
     private readonly _settings;
@@ -10,6 +11,7 @@ export declare class MetadataService {
     private _metadataUrl;
     private _signingKeys;
     private _metadata;
+    private _fetchRequestCredentials;
     constructor(_settings: OidcClientSettingsStore);
     resetSigningKeys(): void;
     getMetadata(): Promise<Partial<OidcMetadata>>;

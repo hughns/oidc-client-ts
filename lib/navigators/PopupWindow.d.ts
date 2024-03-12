@@ -1,4 +1,4 @@
-import { Logger, PopupWindowFeatures } from "../utils";
+import { Logger, type PopupWindowFeatures } from "../utils";
 import { AbstractChildWindow } from "./AbstractChildWindow";
 import type { NavigateParams, NavigateResponse } from "./IWindow";
 /**

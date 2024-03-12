@@ -16,5 +16,6 @@ export declare class RedirectNavigator implements INavigator {
     private readonly _logger;
     constructor(_settings: UserManagerSettingsStore);
     prepare({ redirectMethod, redirectTarget, }: RedirectParams): Promise<IWindow>;
+    callback(): Promise<void>;
 }
 //# sourceMappingURL=RedirectNavigator.d.ts.map

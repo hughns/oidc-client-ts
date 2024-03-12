@@ -1,5 +1,6 @@
 /**
  * @public
+ * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthError
  */
 export declare class SignoutResponse {
     readonly state: string | null;

@@ -1,1 +1,1 @@
-{"version":3,"file":"SessionStatus.d.ts","sourceRoot":"","sources":["../src/SessionStatus.ts"],"names":[],"mappings":"AAGA;;GAEG;AACH,MAAM,WAAW,aAAa;IAC1B,gFAAgF;IAChF,aAAa,EAAE,MAAM,CAAC;IACtB,yBAAyB;IACzB,GAAG,CAAC,EAAE,MAAM,CAAC;IACb,iBAAiB;IACjB,GAAG,CAAC,EAAE,MAAM,CAAC;CAChB"}
+{"version":3,"file":"SessionStatus.d.ts","sourceRoot":"","sources":["../src/SessionStatus.ts"],"names":[],"mappings":"AAGA;;GAEG;AACH,MAAM,WAAW,aAAa;IAC1B,gFAAgF;IAChF,aAAa,EAAE,MAAM,CAAC;IACtB,yBAAyB;IACzB,GAAG,CAAC,EAAE,MAAM,CAAC;CAChB"}

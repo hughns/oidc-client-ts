@@ -1,55 +1,53 @@
 import { Logger } from "./utils";
-import { OidcClientSettings, OidcClientSettingsStore } from "./OidcClientSettings";
+import { type OidcClientSettings, OidcClientSettingsStore } from "./OidcClientSettings";
 import { ResponseValidator } from "./ResponseValidator";
 import { MetadataService } from "./MetadataService";
 import type { RefreshState } from "./RefreshState";
-import { SigninRequest } from "./SigninRequest";
+import { SigninRequest, type SigninRequestCreateArgs } from "./SigninRequest";
 import { SigninResponse } from "./SigninResponse";
-import { SignoutRequest, SignoutRequestArgs } from "./SignoutRequest";
+import { SignoutRequest, type SignoutRequestArgs } from "./SignoutRequest";
 import { SignoutResponse } from "./SignoutResponse";
 import { SigninState } from "./SigninState";
 import { State } from "./State";
 import { TokenClient } from "./TokenClient";
-import { DeviceAuthorizationClient, DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import { ClaimsService } from "./ClaimsService";
+import { DeviceAuthorizationClient } from "./DeviceAuthorizationClient";
+import type { DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
 /**
  * @public
  */
-export interface CreateSigninRequestArgs {
+export interface CreateSigninRequestArgs extends Omit<SigninRequestCreateArgs, "url" | "authority" | "client_id" | "redirect_uri" | "response_type" | "scope" | "state_data"> {
     redirect_uri?: string;
     response_type?: string;
     scope?: string;
-    nonce?: string;
     /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
-    prompt?: string;
-    display?: string;
-    max_age?: number;
-    ui_locales?: string;
-    id_token_hint?: string;
-    login_hint?: string;
-    acr_values?: string;
-    resource?: string;
-    response_mode?: "query" | "fragment";
-    request?: string;
-    request_uri?: string;
-    extraQueryParams?: Record<string, string | number | boolean>;
-    request_type?: string;
-    client_secret?: string;
-    extraTokenParams?: Record<string, unknown>;
-    skipUserInfo?: boolean;
 }
 /**
  * @public
  */
 export interface UseRefreshTokenArgs {
-    state: RefreshState;
+    redirect_uri?: string;
+    resource?: string | string[];
+    extraTokenParams?: Record<string, unknown>;
     timeoutInSeconds?: number;
+    state: RefreshState;
 }
 /**
  * @public
  */
-export declare type CreateSignoutRequestArgs = Omit<SignoutRequestArgs, "url" | "state_data"> & {
+export type CreateSignoutRequestArgs = Omit<SignoutRequestArgs, "url" | "state_data"> & {
+    /** custom "state", which can be used by a caller to have "data" round tripped */
     state?: unknown;
+};
+/**
+ * @public
+ */
+export type ProcessResourceOwnerPasswordCredentialsArgs = {
+    username: string;
+    password: string;
+    skipUserInfo?: boolean;
+    extraTokenParams?: Record<string, unknown>;
 };
 /**
  * Provides the raw OIDC/OAuth2 protocol support for the authorization endpoint and the end session endpoint in the
@@ -63,18 +61,21 @@ export declare class OidcClient {
     readonly settings: OidcClientSettingsStore;
     protected readonly _logger: Logger;
     readonly metadataService: MetadataService;
+    protected readonly _claimsService: ClaimsService;
     protected readonly _validator: ResponseValidator;
     protected readonly _tokenClient: TokenClient;
     protected readonly _deviceAuthorizationClient: DeviceAuthorizationClient;
     constructor(settings: OidcClientSettings);
-    createSigninRequest({ state, request, request_uri, request_type, id_token_hint, login_hint, skipUserInfo, nonce, response_type, scope, redirect_uri, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, extraQueryParams, extraTokenParams, }: CreateSigninRequestArgs): Promise<SigninRequest>;
+    constructor(settings: OidcClientSettingsStore, metadataService: MetadataService);
+    createSigninRequest({ state, request, request_uri, request_type, id_token_hint, login_hint, skipUserInfo, nonce, url_state, response_type, scope, redirect_uri, prompt, display, max_age, ui_locales, acr_values, resource, response_mode, extraQueryParams, extraTokenParams, }: CreateSigninRequestArgs): Promise<SigninRequest>;
     readSigninResponseState(url: string, removeState?: boolean): Promise<{
         state: SigninState;
         response: SigninResponse;
     }>;
     processSigninResponse(url: string): Promise<SigninResponse>;
-    useRefreshToken({ state, timeoutInSeconds, }: UseRefreshTokenArgs): Promise<SigninResponse>;
-    createSignoutRequest({ state, id_token_hint, request_type, post_logout_redirect_uri, extraQueryParams, }?: CreateSignoutRequestArgs): Promise<SignoutRequest>;
+    processResourceOwnerPasswordCredentials({ username, password, skipUserInfo, extraTokenParams, }: ProcessResourceOwnerPasswordCredentialsArgs): Promise<SigninResponse>;
+    useRefreshToken({ state, redirect_uri, resource, timeoutInSeconds, extraTokenParams, }: UseRefreshTokenArgs): Promise<SigninResponse>;
+    createSignoutRequest({ state, id_token_hint, client_id, request_type, post_logout_redirect_uri, extraQueryParams, }?: CreateSignoutRequestArgs): Promise<SignoutRequest>;
     readSignoutResponseState(url: string, removeState?: boolean): Promise<{
         state: State | undefined;
         response: SignoutResponse;

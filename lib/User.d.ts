@@ -1,9 +1,10 @@
 import type { IdTokenClaims } from "./Claims";
 /**
  * Holds claims represented by a combination of the `id_token` and the user info endpoint.
+ *
  * @public
  */
-export declare type UserProfile = IdTokenClaims;
+export type UserProfile = IdTokenClaims;
 /**
  * @public
  */
@@ -36,6 +37,7 @@ export declare class User {
     expires_at?: number;
     /** custom state data set during the initial signin request */
     readonly state: unknown;
+    readonly url_state?: string;
     constructor(args: {
         id_token?: string;
         session_state?: string | null;
@@ -46,6 +48,7 @@ export declare class User {
         profile: UserProfile;
         expires_at?: number;
         userState?: unknown;
+        url_state?: string;
     });
     /** Computed number of seconds the access token has remaining. */
     get expires_in(): number | undefined;

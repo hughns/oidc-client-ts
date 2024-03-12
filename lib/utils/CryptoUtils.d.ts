@@ -14,7 +14,7 @@ export declare class CryptoUtils {
     /**
      * PKCE: Generate a code challenge
      */
-    static generateCodeChallenge(code_verifier: string): string;
+    static generateCodeChallenge(code_verifier: string): Promise<string>;
     /**
      * Generates a base64-encoded string for a basic auth header
      */
