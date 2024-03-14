@@ -35,6 +35,8 @@ import type { MetadataService } from "./MetadataService";
 import { RefreshState } from "./RefreshState";
 import type { SigninResponse } from "./SigninResponse";
 import type {
+    DeviceAccessTokenError,
+    DeviceAccessTokenResponse,
     DeviceAuthorizationRequestArgs,
     DeviceAuthorizationResponse,
 } from "./DeviceAuthorizationClient";
@@ -917,20 +919,20 @@ export class UserManager {
 
     public async waitForDeviceAuthorization(
         params: DeviceAuthorizationResponse,
-    ): Promise<Record<string, unknown>> {
+    ): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError> {
         const res = await this._client.waitForDeviceAuthorization(params);
-        if (res.access_token) {
+        if ("access_token" in res) {
             const profile = JwtUtils.decode(
                 (res.id_token as string) ?? "",
             ) as UserProfile;
             const user = new User({
                 profile,
-                access_token: res.access_token as string,
-                token_type: res.token_type as string,
-                id_token: res.id_token as string | undefined,
-                refresh_token: res.refresh_token as string | undefined,
-                scope: res.scope as string | undefined,
-                session_state: res.session_state as string | undefined,
+                access_token: res.access_token,
+                token_type: res.token_type,
+                id_token: res.id_token,
+                refresh_token: res.refresh_token,
+                scope: res.scope,
+                session_state: res.session_state,
             });
             if (typeof res.expires_in === "number") {
                 user.expires_in = res.expires_in;

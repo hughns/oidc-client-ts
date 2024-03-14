@@ -10,7 +10,7 @@ import type { SessionStatus } from "./SessionStatus";
 import type { SignoutResponse } from "./SignoutResponse";
 import type { MetadataService } from "./MetadataService";
 import type { SigninResponse } from "./SigninResponse";
-import type { DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import type { DeviceAccessTokenError, DeviceAccessTokenResponse, DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
 /**
  * @public
  */
@@ -246,6 +246,6 @@ export declare class UserManager {
      */
     clearStaleState(): Promise<void>;
     startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 //# sourceMappingURL=UserManager.d.ts.map

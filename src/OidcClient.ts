@@ -20,6 +20,8 @@ import { TokenClient } from "./TokenClient";
 import { ClaimsService } from "./ClaimsService";
 import { DeviceAuthorizationClient } from "./DeviceAuthorizationClient";
 import type {
+    DeviceAccessTokenError,
+    DeviceAccessTokenResponse,
     DeviceAuthorizationRequestArgs,
     DeviceAuthorizationResponse,
 } from "./DeviceAuthorizationClient";
@@ -439,7 +441,7 @@ export class OidcClient {
 
     public async waitForDeviceAuthorization(
         params: DeviceAuthorizationResponse,
-    ): Promise<Record<string, unknown>> {
+    ): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError> {
         this._logger.create("waitForDeviceAuthorization");
         let interval = (params.interval ?? 5) * 1000; // poll interval
         const expiration = Date.now() + params.expires_in * 1000;
@@ -462,9 +464,9 @@ export class OidcClient {
                         case "expired_token":
                             return {
                                 error: e.error,
-                                error_description: e.error_description,
-                                error_uri: e.error_uri,
-                                session_state: e.session_state,
+                                error_description: e.error_description ?? undefined,
+                                error_uri: e.error_uri ?? undefined,
+                                session_state: e.session_state ?? undefined,
                             };
                     }
                 }

@@ -125,6 +125,23 @@ declare interface DeviceAccessTokenArgs {
     device_code: string;
 }
 
+declare interface DeviceAccessTokenError {
+    error: string;
+    error_description?: string;
+    error_uri?: string;
+    session_state?: string;
+}
+
+export declare interface DeviceAccessTokenResponse {
+    id_token?: string;
+    access_token: string;
+    token_type: string;
+    refresh_token?: string;
+    scope?: string;
+    expires_in?: number;
+    session_state?: string;
+}
+
 /**
  * @internal
  */
@@ -136,8 +153,8 @@ declare class DeviceAuthorizationClient {
     private readonly _jsonService;
     private _responseInProgress?;
     constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService, _tokenClient: TokenClient);
-    startDeviceAuthorization({ client_id, scope, nonce, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    startDeviceAuthorization({ client_id, scope, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
+    waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 
 /**
@@ -146,7 +163,6 @@ declare class DeviceAuthorizationClient {
 declare interface DeviceAuthorizationRequestArgs {
     client_id?: string;
     scope?: string;
-    nonce?: string;
 }
 
 /**
@@ -518,7 +534,7 @@ export declare class OidcClient {
     clearStaleState(): Promise<void>;
     revokeToken(token: string, type?: "access_token" | "refresh_token"): Promise<void>;
     startDeviceAuthorization(args: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 
 /**
@@ -1305,7 +1321,7 @@ declare class TokenClient {
      * @see https://datatracker.ietf.org/doc/html/rfc7009#section-2.1
      */
     revoke(args: RevokeArgs): Promise<void>;
-    deviceAccessToken({ device_code, client_id, client_secret, }: DeviceAccessTokenArgs): Promise<Record<string, unknown>>;
+    deviceAccessToken({ device_code, client_id, client_secret, }: DeviceAccessTokenArgs): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 
 /**
@@ -1584,7 +1600,7 @@ export declare class UserManager {
       */
      clearStaleState(): Promise<void>;
      startDeviceAuthorization(args?: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+     waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
     }
 
     /**

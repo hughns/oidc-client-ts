@@ -12,7 +12,7 @@ import { State } from "./State";
 import { TokenClient } from "./TokenClient";
 import { ClaimsService } from "./ClaimsService";
 import { DeviceAuthorizationClient } from "./DeviceAuthorizationClient";
-import type { DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
+import type { DeviceAccessTokenError, DeviceAccessTokenResponse, DeviceAuthorizationRequestArgs, DeviceAuthorizationResponse } from "./DeviceAuthorizationClient";
 /**
  * @public
  */
@@ -84,6 +84,6 @@ export declare class OidcClient {
     clearStaleState(): Promise<void>;
     revokeToken(token: string, type?: "access_token" | "refresh_token"): Promise<void>;
     startDeviceAuthorization(args: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 //# sourceMappingURL=OidcClient.d.ts.map

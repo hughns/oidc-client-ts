@@ -20,7 +20,23 @@ export interface DeviceAuthorizationRequest {
 export interface DeviceAuthorizationRequestArgs {
     client_id?: string;
     scope?: string;
-    nonce?: string;
+}
+
+export interface DeviceAccessTokenResponse {
+    id_token?: string;
+    access_token: string;
+    token_type: string;
+    refresh_token?: string;
+    scope?: string;
+    expires_in?: number;
+    session_state?: string;
+}
+
+export interface DeviceAccessTokenError {
+    error: string;
+    error_description?: string;
+    error_uri?: string;
+    session_state?: string;
 }
 
 /**
@@ -47,7 +63,7 @@ export interface RevokeArgs {
  * @internal
  */
 export class DeviceAuthorizationClient {
-    private readonly _logger = new Logger("TokenClient");
+    private readonly _logger = new Logger("DeviceAuthorizationClient");
     private readonly _jsonService = new JsonService();
     private _responseInProgress?: DeviceAuthorizationResponse;
 
@@ -60,7 +76,6 @@ export class DeviceAuthorizationClient {
     public async startDeviceAuthorization({
         client_id = this._settings.client_id,
         scope,
-        nonce,
     }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse> {
         const logger = this._logger.create("startDeviceAuthorization");
 
@@ -69,9 +84,6 @@ export class DeviceAuthorizationClient {
         }
 
         const params = new URLSearchParams({ client_id, scope: scope ?? this._settings.scope });
-        if (nonce) {
-            params.set("nonce", nonce);
-        }
 
         const url = (await this._metadataService.getMetadata()).device_authorization_endpoint;
         if (!url) {
@@ -89,7 +101,7 @@ export class DeviceAuthorizationClient {
         return this._responseInProgress;
     }
 
-    public async waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<Record<string, unknown>> {
+    public async waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError> {
         return await this._tokenClient.deviceAccessToken({
             device_code,
         });

@@ -5,6 +5,7 @@ import { CryptoUtils, Logger } from "./utils";
 import { JsonService } from "./JsonService";
 import type { MetadataService } from "./MetadataService";
 import type { OidcClientSettingsStore } from "./OidcClientSettings";
+import type { DeviceAccessTokenError, DeviceAccessTokenResponse } from "./DeviceAuthorizationClient";
 
 /**
  * @internal
@@ -279,7 +280,7 @@ export class TokenClient {
         device_code,
         client_id = this._settings.client_id,
         client_secret = this._settings.client_secret,
-    }: DeviceAccessTokenArgs): Promise<Record<string, unknown>> {
+    }: DeviceAccessTokenArgs): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError> {
         const logger = this._logger.create("deviceAccessToken");
         if (!client_id) {
             logger.throw(new Error("A client_id is required"));
@@ -312,6 +313,6 @@ export class TokenClient {
         const response = await this._jsonService.postForm(url, { body: params, basicAuth });
         logger.debug("got response");
 
-        return response;
+        return response as unknown as DeviceAccessTokenResponse;
     }
 }

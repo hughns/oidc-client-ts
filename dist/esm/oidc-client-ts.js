@@ -1639,22 +1639,18 @@ var DeviceAuthorizationClient = class {
     this._settings = _settings;
     this._metadataService = _metadataService;
     this._tokenClient = _tokenClient;
-    this._logger = new Logger("TokenClient");
+    this._logger = new Logger("DeviceAuthorizationClient");
     this._jsonService = new JsonService();
   }
   async startDeviceAuthorization({
     client_id = this._settings.client_id,
-    scope,
-    nonce
+    scope
   }) {
     const logger2 = this._logger.create("startDeviceAuthorization");
     if (!client_id) {
       logger2.throw(new Error("A client_id is required"));
     }
     const params = new URLSearchParams({ client_id, scope: scope != null ? scope : this._settings.scope });
-    if (nonce) {
-      params.set("nonce", nonce);
-    }
     const url = (await this._metadataService.getMetadata()).device_authorization_endpoint;
     if (!url) {
       logger2.throw(new Error("No device_authorization_endpoint given"));
@@ -1941,7 +1937,7 @@ var OidcClient = class {
     );
   }
   async waitForDeviceAuthorization(params) {
-    var _a;
+    var _a, _b, _c, _d;
     this._logger.create("waitForDeviceAuthorization");
     let interval = ((_a = params.interval) != null ? _a : 5) * 1e3;
     const expiration = Date.now() + params.expires_in * 1e3;
@@ -1963,9 +1959,9 @@ var OidcClient = class {
             case "expired_token":
               return {
                 error: e.error,
-                error_description: e.error_description,
-                error_uri: e.error_uri,
-                session_state: e.session_state
+                error_description: (_b = e.error_description) != null ? _b : void 0,
+                error_uri: (_c = e.error_uri) != null ? _c : void 0,
+                session_state: (_d = e.session_state) != null ? _d : void 0
               };
           }
         }
@@ -3308,7 +3304,7 @@ var UserManager = class {
   async waitForDeviceAuthorization(params) {
     var _a;
     const res = await this._client.waitForDeviceAuthorization(params);
-    if (res.access_token) {
+    if ("access_token" in res) {
       const profile = JwtUtils.decode(
         (_a = res.id_token) != null ? _a : ""
       );

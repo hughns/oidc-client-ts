@@ -61,6 +61,24 @@ export type CreateSignoutRequestArgs = Omit<SignoutRequestArgs, "url" | "state_d
     state?: unknown;
 };
 
+// @public (undocumented)
+export interface DeviceAccessTokenResponse {
+    // (undocumented)
+    access_token: string;
+    // (undocumented)
+    expires_in?: number;
+    // (undocumented)
+    id_token?: string;
+    // (undocumented)
+    refresh_token?: string;
+    // (undocumented)
+    scope?: string;
+    // (undocumented)
+    session_state?: string;
+    // (undocumented)
+    token_type: string;
+}
+
 // @internal (undocumented)
 export interface DeviceAuthorizationResponse {
     // (undocumented)
@@ -363,10 +381,11 @@ export class OidcClient {
     //
     // (undocumented)
     protected readonly _validator: ResponseValidator;
+    // Warning: (ae-forgotten-export) The symbol "DeviceAccessTokenError" needs to be exported by the entry point index.d.ts
     // Warning: (ae-incompatible-release-tags) The symbol "waitForDeviceAuthorization" is marked as @public, but its signature references "DeviceAuthorizationResponse" which is marked as @internal
     //
     // (undocumented)
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 
 // @public
@@ -1048,7 +1067,7 @@ export class UserManager {
     // Warning: (ae-incompatible-release-tags) The symbol "waitForDeviceAuthorization" is marked as @public, but its signature references "DeviceAuthorizationResponse" which is marked as @internal
     //
     // (undocumented)
-    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    waitForDeviceAuthorization(params: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 
 // @public (undocumented)

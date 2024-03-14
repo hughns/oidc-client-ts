@@ -1,5 +1,6 @@
 import type { MetadataService } from "./MetadataService";
 import type { OidcClientSettingsStore } from "./OidcClientSettings";
+import type { DeviceAccessTokenError, DeviceAccessTokenResponse } from "./DeviceAuthorizationClient";
 /**
  * @internal
  */
@@ -83,6 +84,6 @@ export declare class TokenClient {
      * @see https://datatracker.ietf.org/doc/html/rfc7009#section-2.1
      */
     revoke(args: RevokeArgs): Promise<void>;
-    deviceAccessToken({ device_code, client_id, client_secret, }: DeviceAccessTokenArgs): Promise<Record<string, unknown>>;
+    deviceAccessToken({ device_code, client_id, client_secret, }: DeviceAccessTokenArgs): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 //# sourceMappingURL=TokenClient.d.ts.map

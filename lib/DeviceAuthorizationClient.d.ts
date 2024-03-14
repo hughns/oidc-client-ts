@@ -14,7 +14,21 @@ export interface DeviceAuthorizationRequest {
 export interface DeviceAuthorizationRequestArgs {
     client_id?: string;
     scope?: string;
-    nonce?: string;
+}
+export interface DeviceAccessTokenResponse {
+    id_token?: string;
+    access_token: string;
+    token_type: string;
+    refresh_token?: string;
+    scope?: string;
+    expires_in?: number;
+    session_state?: string;
+}
+export interface DeviceAccessTokenError {
+    error: string;
+    error_description?: string;
+    error_uri?: string;
+    session_state?: string;
 }
 /**
  * @internal
@@ -45,7 +59,7 @@ export declare class DeviceAuthorizationClient {
     private readonly _jsonService;
     private _responseInProgress?;
     constructor(_settings: OidcClientSettingsStore, _metadataService: MetadataService, _tokenClient: TokenClient);
-    startDeviceAuthorization({ client_id, scope, nonce, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
-    waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<Record<string, unknown>>;
+    startDeviceAuthorization({ client_id, scope, }: DeviceAuthorizationRequestArgs): Promise<DeviceAuthorizationResponse>;
+    waitForDeviceAuthorization({ device_code }: DeviceAuthorizationResponse): Promise<DeviceAccessTokenResponse | DeviceAccessTokenError>;
 }
 //# sourceMappingURL=DeviceAuthorizationClient.d.ts.map
